@@ -1,3 +1,0 @@
-/home/anshita/Assignments/2-2/graphics/graphics-boilerplate/build/CMakeFiles/edit_cache.dir
-/home/anshita/Assignments/2-2/graphics/graphics-boilerplate/build/CMakeFiles/rebuild_cache.dir
-/home/anshita/Assignments/2-2/graphics/graphics-boilerplate/build/CMakeFiles/graphics_asgn1.dir
