@@ -72,6 +72,15 @@ struct bounding_box_t {
     float height;
 };
 
+typedef struct screen_boundaries
+{
+    float up;
+    float down;
+    float right;
+    float left;
+} screen;
+
+
 bool detect_collision(bounding_box_t a, bounding_box_t b);
 
 extern float screen_zoom, screen_center_x, screen_center_y;

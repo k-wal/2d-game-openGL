@@ -1,14 +1,16 @@
 #include "ball.h"
 #include "main.h"
 
-Ball::Ball(float x, float y, color_t color) {
+Ball::Ball(float x, float y, color_t color)
+{
     this->position = glm::vec3(x, y, 0);
     this->rotation = 0;
     this->speed_y = 0;
     this->speed_x=0;
     this->acc_x=0.002;
-    this->acc_y=0.002;
-    int n=100;
+    this->acc_y=0.003;
+    this->cur_jump_state=0;
+    int n=3;
     this->r=0.5f;
     float pi=3.14f;
     GLfloat g_vertex_buffer_data[9*n];
@@ -81,33 +83,31 @@ void Ball::tick()
 {
     int screen_left = -4;
     int screen_right = 3;
-    int screen_down = -4;
+    int screen_down = -3;
+    int screen_up = 3;
 
-    this->speed_y-=this->acc_y;
-    if(this->position.y-this->r<=screen_down && this->speed_y<0)
-    {
-        //printf("%lf %lf \n",this->position.y,this->r);
-        this->speed_y=-1*this->speed_y;
-    }
-    else
-    {
-        this->position.y+=this->speed_y;
-    }
-    if(this->position.x-this->r<=screen_left && this->speed_x<0)
-    {
-        //printf("%lf %lf \n",this->position.y,this->r);
-        this->speed_x=-1*this->speed_x;
-    }
-    else if(this->position.x-this->r>screen_right && this->speed_x>0)
-    {
-        this->speed_x=-1*this->speed_x;
-    }
-    else
-    {
-        this->position.x+=this->speed_x;
-    }
     
-    //this->position.x+=this->speed_x;
+    if(this->position.y-this->r >= screen_down)
+    {
+        if(!this->cur_jump_state)
+        {
+            this->speed_y-=this->acc_y;    
+        }
+        if((this->position.y+this->r >= screen_up && this->speed_y>0))
+        {
+            //if its at the top
+            this->speed_y=0;            
+        }
+        else
+        {
+            this->position.y += this->speed_y;
+        }
+    }
+    else
+    {
+        this->speed_y=0;
+    }
+    this->cur_jump_state = 0;
         
 }
 
@@ -119,4 +119,21 @@ void Ball::left_click()
 void Ball::right_click()
 {
     this->speed_x+=this->acc_x;
+}
+
+void Ball::jump()
+{
+    int screen_left = -4;
+    int screen_right = 3;
+    int screen_down = -3;
+    int screen_up = 3;
+    if(this->position.y+this->r <= screen_up)
+    {
+        this->speed_y += this->acc_y;
+    }
+    if(this->speed_y == this->acc_y)
+    {
+        this->position.y += this->speed_y;    
+    }
+    this->cur_jump_state = 1;
 }

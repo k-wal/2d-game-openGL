@@ -57,6 +57,7 @@ void draw() {
 void tick_input(GLFWwindow *window) {
     int left  = glfwGetKey(window, GLFW_KEY_LEFT);
     int right = glfwGetKey(window, GLFW_KEY_RIGHT);
+    int space = glfwGetKey(window, GLFW_KEY_SPACE);
     //int up  = glfwGetKey(window, GLFW_KEY_UP);
     //int down = glfwGetKey(window, GLFW_KEY_DOWN);
     
@@ -68,15 +69,10 @@ void tick_input(GLFWwindow *window) {
     {
         ball1.right_click();
     }
-    /*
-    if(up)
+    if(space)
     {
-        //ball1.position.y+=ball1.speed;
+        ball1.jump();
     }
-    if(down)
-    {
-        //ball1.position.y-=ball1.speed;
-    }*/ 
 }
 
 void tick_elements() {
@@ -90,7 +86,7 @@ void initGL(GLFWwindow *window, int width, int height) {
     /* Objects should be created before any other gl function and shaders */
     // Create the models
 
-    ball1       = Ball(2, 2, COLOR_RED);
+    ball1       = Ball(0, 0, COLOR_RED);
 
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");

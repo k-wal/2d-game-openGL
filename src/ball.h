@@ -18,8 +18,11 @@ public:
     double acc_y;
     double acc_x;
     float r;
+    // cur_jump_state : 1 if space is pressed, 0 otherwise
+    float cur_jump_state;
     void left_click();
     void right_click();
+    void jump();
 private:
     VAO *object;
 };
