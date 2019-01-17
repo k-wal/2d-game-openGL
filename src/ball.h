@@ -23,6 +23,8 @@ public:
     void left_click();
     void right_click();
     void jump();
+    bounding_box_t bound;
+    void update_bounding_box();
 private:
     VAO *object;
 };
