@@ -20,6 +20,8 @@ float screen_zoom = 1, screen_center_x = 0, screen_center_y = 0;
 float camera_target_x =0;
 float camera_location_x=0;
 float camera_rotation_angle = 0;
+int count_zappers=0;
+
 
 Timer t60(1.0 / 60);
 
@@ -56,7 +58,36 @@ void draw() {
 
     // Scene render
     ball1.draw(VP);
-    z.draw(VP);
+    //z.draw(VP);
+    for(int i=0; i<zappers.size(); i++)
+    {
+        //printf("drawing %f  %f\n",zappers[i].position.x-camera_location_x,zappers[i].position.y);
+        zappers[i].draw(VP);
+    }
+}
+
+void create_zapper()
+{
+    if(count_zappers>1)
+        return;
+    printf("CREATING\n");
+    int rnum=rand();
+    Zapper z=Zapper(5+camera_location_x,rnum%6-3,rnum%90,1.4,COLOR_YELLOW);
+    zappers.push_back(z);
+    count_zappers++;
+}
+
+void count_elements()
+{
+    count_zappers=zappers.size();
+    for(int i=0; i<zappers.size(); i++)
+    {
+        Zapper z=zappers[i];
+        if(z.position.x<camera_location_x-3 && z.position.x!=-100)
+        {
+            count_zappers--;
+        }
+    }
 }
 
 void tick_input(GLFWwindow *window) {
@@ -71,9 +102,12 @@ void tick_input(GLFWwindow *window) {
         ball1.left_click();
         camera_location_x-=0.01;
         camera_target_x-=0.01;
-        if(detect_collision_line(z.bound,ball1.bound))
+        for(int i=0; i<zappers.size(); i++)
         {
-            z.position.x -= 100;
+            if(detect_collision_line(zappers[i].bound,ball1.bound))
+            {
+                zappers[i].position.x -= 100;
+            }
         }
     }
     if(right)
@@ -81,30 +115,42 @@ void tick_input(GLFWwindow *window) {
         ball1.right_click();
         camera_location_x+=0.01;
         camera_target_x+=0.01;
-        if(detect_collision_line(z.bound,ball1.bound))
+        for(int i=0; i<zappers.size(); i++)
         {
-            z.position.x -= 100;
+            if(detect_collision_line(zappers[i].bound,ball1.bound))
+            {
+                zappers[i].position.x -= 100;
+            }
         }
+        create_zapper();
 
     //    glm::vec3 target (screen_center_x, 0, 0);
     }
     if(space)
     {
         ball1.jump();
-        if(detect_collision_line(z.bound,ball1.bound))
+        for(int i=0; i<zappers.size(); i++)
         {
-            z.position.x -= 100;
+            if(detect_collision_line(zappers[i].bound,ball1.bound))
+            {
+                zappers[i].position.x -= 100;
+            }
         }
     
     }
 }
 
+
 void tick_elements() {
     ball1.tick();
-    if(detect_collision_line(z.bound,ball1.bound))
+    for(int i=0; i<zappers.size(); i++)
     {
-        z.position.x -= 100;
+        if(detect_collision_line(zappers[i].bound,ball1.bound))
+        {
+            zappers[i].position.x -= 100;
+        }
     }
+    count_elements();
     //camera_rotation_angle += 1;
 }
 
@@ -115,7 +161,11 @@ void initGL(GLFWwindow *window, int width, int height) {
     // Create the models
 
     ball1       = Ball(0, 0, COLOR_RED);
-    z = Zapper(2,2,90,1.4,COLOR_YELLOW);
+    Zapper z = Zapper(1,2,30,1.2,COLOR_YELLOW);
+    zappers.push_back(z);
+    z = Zapper(4,1,60,1.2,COLOR_YELLOW);
+    zappers.push_back(z);
+    count_elements();
 
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");
