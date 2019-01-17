@@ -3,6 +3,7 @@
 #include "ball.h"
 #include "zapper.h"
 #include "coin.h"
+#include "platform.h"
 
 using namespace std;
 
@@ -15,6 +16,7 @@ GLFWwindow *window;
 **************************/
 
 Ball ball1;
+Platform platform1;
 vector<Zapper> zappers;
 vector<Coin> coins;
 
@@ -24,14 +26,23 @@ float camera_location_x=0;
 float camera_rotation_angle = 0;
 int count_zappers=0;
 int count_coins=0;
+int zappers_hit=0;
 int score=0;
 int coins_scored=0;
+int life=0;
+int hang=0;
 
 Timer t60(1.0 / 60);
 
 /* Render the scene with openGL */
 /* Edit this function according to your assignment */
-void draw() {
+void draw()
+{
+    if(hang>0)
+    {
+        return;
+    }
+    
     // clear the color and depth in the frame buffer
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -62,15 +73,14 @@ void draw() {
 
     // Scene render
     ball1.draw(VP);
+    platform1.draw(VP);
     //z.draw(VP);
     for(int i=0; i<zappers.size(); i++)
     {
-        //printf("drawing %f  %f\n",zappers[i].position.x-camera_location_x,zappers[i].position.y);
         zappers[i].draw(VP);
     }
     for(int i=0; i<coins.size(); i++)
     {
-        //printf("DRAWING\n");
         coins[i].draw(VP);
     }
 }
@@ -79,7 +89,6 @@ void create_zapper()
 {
     if(count_zappers>=1)
         return;
-    //printf("CREATING\n");
     int rnum=rand();
     Zapper z=Zapper(5+camera_location_x,rnum%5-2,rnum%120+30,1.4,COLOR_YELLOW);
     zappers.push_back(z);
@@ -90,7 +99,6 @@ void create_coin()
 {
     if(count_coins>=2)
         return;
-    //printf("creating coins\n");
     int rnum=rand();
     Coin c=Coin(5+camera_location_x,rnum%4-1,COLOR_GOLDEN);
     coins.push_back(c);
@@ -100,12 +108,17 @@ void create_coin()
 void count_elements()
 {
     count_zappers=zappers.size();
+    zappers_hit=0;
     for(int i=0; i<zappers.size(); i++)
     {
         Zapper z=zappers[i];
         if(z.position.x<camera_location_x-3)
         {
             count_zappers--;
+        }
+        if(z.position.x==-100)
+        {
+            zappers_hit++;
         }
     }
     count_coins=coins.size();
@@ -143,7 +156,12 @@ void detect_all_collisions()
     }
 }
 
-void tick_input(GLFWwindow *window) {
+void tick_input(GLFWwindow *window)
+{
+    if(hang>0)
+    {
+        return;
+    }
     int left  = glfwGetKey(window, GLFW_KEY_LEFT);
     int right = glfwGetKey(window, GLFW_KEY_RIGHT);
     int space = glfwGetKey(window, GLFW_KEY_SPACE);
@@ -178,12 +196,17 @@ void tick_input(GLFWwindow *window) {
 
 void tick_elements(GLFWwindow *window)
 {
+    if(hang>0)
+    {
+        return;
+    }
     char title[1000];
     ball1.tick();
     detect_all_collisions();
     count_elements();
     score=coins_scored*5;
-    sprintf(title,"SCORE : %d",score);
+    life=5-zappers_hit;
+    sprintf(title,"SCORE : %d\t LIFE : %d",score,life);
     glfwSetWindowTitle(window,title);
     //camera_rotation_angle += 1;
 }
@@ -205,6 +228,7 @@ void initGL(GLFWwindow *window, int width, int height) {
     coins.push_back(c);
     count_elements();
 
+    platform1 = Platform(500,-1003.05,COLOR_BLACK);
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");
     // Get a handle for our "MVP" uniform
@@ -227,7 +251,8 @@ void initGL(GLFWwindow *window, int width, int height) {
 }
 
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     srand(time(0));
     int width  = 600;
     int height = 600;
@@ -238,10 +263,17 @@ int main(int argc, char **argv) {
     initGL (window, width, height);
 
     /* Draw in loop */
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(window))
+    {
         // Process timers
 
-        if (t60.processTick()) {
+        
+        if (t60.processTick())
+        {
+            if(hang>0)
+            {
+                hang--;
+            }
             // 60 fps
             // OpenGL Draw commands
             draw();

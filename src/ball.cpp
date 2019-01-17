@@ -123,6 +123,12 @@ void Ball::tick()
     {
         this->speed_y=0;
     }
+    if(this->position.y-this->r<screen_down)
+    {
+        this->position.y=screen_down+this->r;
+        this->speed_y=0;
+    }
+        
     this->cur_jump_state = 0;
     this->update_bounding_box();
         
