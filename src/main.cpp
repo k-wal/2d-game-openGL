@@ -2,6 +2,7 @@
 #include "timer.h"
 #include "ball.h"
 #include "zapper.h"
+#include "coin.h"
 
 using namespace std;
 
@@ -15,13 +16,16 @@ GLFWwindow *window;
 
 Ball ball1;
 vector<Zapper> zappers;
+vector<Coin> coins;
 
 float screen_zoom = 1, screen_center_x = 0, screen_center_y = 0;
 float camera_target_x =0;
 float camera_location_x=0;
 float camera_rotation_angle = 0;
 int count_zappers=0;
-
+int count_coins=0;
+int score=0;
+int coins_scored=0;
 
 Timer t60(1.0 / 60);
 
@@ -64,17 +68,33 @@ void draw() {
         //printf("drawing %f  %f\n",zappers[i].position.x-camera_location_x,zappers[i].position.y);
         zappers[i].draw(VP);
     }
+    for(int i=0; i<coins.size(); i++)
+    {
+        //printf("DRAWING\n");
+        coins[i].draw(VP);
+    }
 }
 
 void create_zapper()
 {
-    if(count_zappers>1)
+    if(count_zappers>=1)
         return;
-    printf("CREATING\n");
+    //printf("CREATING\n");
     int rnum=rand();
-    Zapper z=Zapper(5+camera_location_x,rnum%6-3,rnum%90,1.4,COLOR_YELLOW);
+    Zapper z=Zapper(5+camera_location_x,rnum%5-2,rnum%120+30,1.4,COLOR_YELLOW);
     zappers.push_back(z);
     count_zappers++;
+}
+
+void create_coin()
+{
+    if(count_coins>=2)
+        return;
+    //printf("creating coins\n");
+    int rnum=rand();
+    Coin c=Coin(5+camera_location_x,rnum%4-1,COLOR_GOLDEN);
+    coins.push_back(c);
+    count_coins++;
 }
 
 void count_elements()
@@ -83,9 +103,42 @@ void count_elements()
     for(int i=0; i<zappers.size(); i++)
     {
         Zapper z=zappers[i];
-        if(z.position.x<camera_location_x-3 && z.position.x!=-100)
+        if(z.position.x<camera_location_x-3)
         {
             count_zappers--;
+        }
+    }
+    count_coins=coins.size();
+    coins_scored=0;
+    for(int i=0; i<coins.size(); i++)
+    {
+        Coin c=coins[i];
+        if(c.position.x<camera_location_x-3)
+        {
+            count_coins--;
+        }
+        if(c.position.x==-100)
+        {
+            coins_scored++;
+        }
+    }
+    //printf("%d\n",coins_scored);
+}
+
+void detect_all_collisions()
+{
+    for(int i=0; i<zappers.size(); i++)
+    {
+        if(detect_collision_line(zappers[i].bound,ball1.bound))
+        {
+            zappers[i].position.x = -100;
+        }
+    }
+    for(int i=0; i<coins.size(); i++)
+    {
+        if(detect_collision_square(coins[i].bound,ball1.bound))
+        {
+            coins[i].position.x = -100;
         }
     }
 }
@@ -102,55 +155,36 @@ void tick_input(GLFWwindow *window) {
         ball1.left_click();
         camera_location_x-=0.01;
         camera_target_x-=0.01;
-        for(int i=0; i<zappers.size(); i++)
-        {
-            if(detect_collision_line(zappers[i].bound,ball1.bound))
-            {
-                zappers[i].position.x -= 100;
-            }
-        }
+        detect_all_collisions();
     }
     if(right)
     {
         ball1.right_click();
         camera_location_x+=0.01;
         camera_target_x+=0.01;
-        for(int i=0; i<zappers.size(); i++)
-        {
-            if(detect_collision_line(zappers[i].bound,ball1.bound))
-            {
-                zappers[i].position.x -= 100;
-            }
-        }
+        detect_all_collisions();
         create_zapper();
-
-    //    glm::vec3 target (screen_center_x, 0, 0);
+        create_coin();
     }
+  
+    //    glm::vec3 target (screen_center_x, 0, 0);
     if(space)
     {
         ball1.jump();
-        for(int i=0; i<zappers.size(); i++)
-        {
-            if(detect_collision_line(zappers[i].bound,ball1.bound))
-            {
-                zappers[i].position.x -= 100;
-            }
-        }
-    
+        detect_all_collisions();
     }
 }
 
 
-void tick_elements() {
+void tick_elements(GLFWwindow *window)
+{
+    char title[1000];
     ball1.tick();
-    for(int i=0; i<zappers.size(); i++)
-    {
-        if(detect_collision_line(zappers[i].bound,ball1.bound))
-        {
-            zappers[i].position.x -= 100;
-        }
-    }
+    detect_all_collisions();
     count_elements();
+    score=coins_scored*5;
+    sprintf(title,"SCORE : %d",score);
+    glfwSetWindowTitle(window,title);
     //camera_rotation_angle += 1;
 }
 
@@ -160,11 +194,15 @@ void initGL(GLFWwindow *window, int width, int height) {
     /* Objects should be created before any other gl function and shaders */
     // Create the models
 
-    ball1       = Ball(0, 0, COLOR_RED);
+    ball1 = Ball(0, 0, COLOR_RED);
     Zapper z = Zapper(1,2,30,1.2,COLOR_YELLOW);
     zappers.push_back(z);
     z = Zapper(4,1,60,1.2,COLOR_YELLOW);
     zappers.push_back(z);
+    Coin c = Coin(1.5,0,COLOR_GOLDEN);
+    coins.push_back(c);
+    c = Coin(3.5,-2,COLOR_GOLDEN);
+    coins.push_back(c);
     count_elements();
 
     // Create and compile our GLSL program from the shaders
@@ -193,6 +231,7 @@ int main(int argc, char **argv) {
     srand(time(0));
     int width  = 600;
     int height = 600;
+    char title[1000];
 
     window = initGLFW(width, height);
 
@@ -209,7 +248,7 @@ int main(int argc, char **argv) {
             // Swap Frame Buffer in double buffering
             glfwSwapBuffers(window);
 
-            tick_elements();
+            tick_elements(window);
             tick_input(window);
         }
 
@@ -226,9 +265,9 @@ float distance(float x1,float y1, float x2, float y2)
     return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }
 
-bool detect_collision(bounding_box_t a, bounding_box_t b) {
-    return (abs(a.x - b.x) * 2 < (a.width + b.width)) &&
-           (abs(a.y - b.y) * 2 < (a.height + b.height));
+bool detect_collision_square(bounding_box_t a, bounding_box_t b) {
+    return (abs(a.x - b.x)  < (a.width + b.width)) &&
+           (abs(a.y - b.y)  < (a.height + b.height));
 }
 
 //l : bounding box of line
@@ -271,6 +310,7 @@ bool detect_collision_line(bounding_box_t l,bounding_box_t p)
     }
     return false;
 }
+
 
 void reset_screen()
 {

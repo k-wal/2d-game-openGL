@@ -83,7 +83,7 @@ typedef struct screen_boundaries
 } screen;
 
 
-bool detect_collision(bounding_box_t a, bounding_box_t b);
+bool detect_collision_square(bounding_box_t a, bounding_box_t b);
 
 bool detect_collision_line(bounding_box_t a, bounding_box_t b);
 
@@ -96,5 +96,6 @@ extern const color_t COLOR_GREEN;
 extern const color_t COLOR_BLACK;
 extern const color_t COLOR_BACKGROUND;
 extern const color_t COLOR_YELLOW;
+extern const color_t COLOR_GOLDEN;
 
 #endif
