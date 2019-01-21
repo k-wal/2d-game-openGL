@@ -4,6 +4,7 @@
 #include "zapper.h"
 #include "coin.h"
 #include "platform.h"
+#include "beam.h"
 
 using namespace std;
 
@@ -19,6 +20,8 @@ Ball ball1;
 Platform platform1;
 vector<Zapper> zappers;
 vector<Coin> coins;
+vector<Beam> beams;
+
 
 float screen_zoom = 1, screen_center_x = 0, screen_center_y = 0;
 float camera_target_x =0;
@@ -26,7 +29,9 @@ float camera_location_x=0;
 float camera_rotation_angle = 0;
 int count_zappers=0;
 int count_coins=0;
+int count_beams=0;
 int zappers_hit=0;
+int beams_hit = 0;
 int score=0;
 int coins_scored=0;
 int life=0;
@@ -83,18 +88,35 @@ void draw()
     {
         coins[i].draw(VP);
     }
+    for(int i=0; i<beams.size(); i++)
+    {
+        beams[i].draw(VP);
+    }
 }
 
+//if number of zappers on the screen is less than one, creates one
 void create_zapper()
 {
     if(count_zappers>=1)
         return;
     int rnum=rand();
-    Zapper z=Zapper(5+camera_location_x,rnum%5-2,rnum%120+30,1.4,COLOR_YELLOW);
+    Zapper z=Zapper(5+camera_location_x,rnum%5-1,rnum%120+30,1.4,COLOR_YELLOW);
     zappers.push_back(z);
     count_zappers++;
 }
 
+void create_beam()
+{
+    if(count_beams>=1)
+        return;
+    int rnum=rand();
+    Beam b = Beam(5+camera_location_x,rnum%5-2,1,COLOR_WHITE);
+    beams.push_back(b);
+    count_beams++;
+}
+
+
+//if number of coins on screen are less than 2, creates more coins
 void create_coin()
 {
     if(count_coins>=2)
@@ -105,6 +127,7 @@ void create_coin()
     count_coins++;
 }
 
+//counts numbers of each element on the screen and counts zappers hit and coins scored
 void count_elements()
 {
     count_zappers=zappers.size();
@@ -112,7 +135,7 @@ void count_elements()
     for(int i=0; i<zappers.size(); i++)
     {
         Zapper z=zappers[i];
-        if(z.position.x<camera_location_x-3)
+        if(z.position.x<camera_location_x-5)
         {
             count_zappers--;
         }
@@ -126,7 +149,7 @@ void count_elements()
     for(int i=0; i<coins.size(); i++)
     {
         Coin c=coins[i];
-        if(c.position.x<camera_location_x-3)
+        if(c.position.x<camera_location_x-5)
         {
             count_coins--;
         }
@@ -135,9 +158,24 @@ void count_elements()
             coins_scored++;
         }
     }
+    count_beams=beams.size();
+    beams_hit=0;
+    for(int i=0; i<beams.size(); i++)
+    {
+        Beam b=beams[i];
+        if(b.position.x<camera_location_x-8)
+        {
+            count_beams--;
+        }
+        if(b.position.x==-100)
+        {
+            beams_hit++;
+        }
+    }
     //printf("%d\n",coins_scored);
 }
 
+//calls other detection functions and removes collided elements from the screen
 void detect_all_collisions()
 {
     for(int i=0; i<zappers.size(); i++)
@@ -147,6 +185,15 @@ void detect_all_collisions()
             zappers[i].position.x = -100;
         }
     }
+
+    for(int i=0; i<beams.size(); i++)
+    {
+        if(detect_collision_square(beams[i].bound,ball1.bound))
+        {
+            beams[i].position.x = -100;
+        }
+    }
+    
     for(int i=0; i<coins.size(); i++)
     {
         if(detect_collision_square(coins[i].bound,ball1.bound))
@@ -183,6 +230,7 @@ void tick_input(GLFWwindow *window)
         detect_all_collisions();
         create_zapper();
         create_coin();
+        create_beam();
     }
   
     //    glm::vec3 target (screen_center_x, 0, 0);
@@ -202,10 +250,22 @@ void tick_elements(GLFWwindow *window)
     }
     char title[1000];
     ball1.tick();
+    for(int i=0; i<coins.size(); i++)
+    {
+        coins[i].tick();
+    }
+    for(int i=0; i<zappers.size(); i++)
+    {
+        zappers[i].tick();
+    }
+    for(int i=0; i<beams.size(); i++)
+    {
+        beams[i].tick();
+    }
     detect_all_collisions();
     count_elements();
     score=coins_scored*5;
-    life=5-zappers_hit;
+    life=5-zappers_hit-beams_hit;
     sprintf(title,"SCORE : %d\t LIFE : %d",score,life);
     glfwSetWindowTitle(window,title);
     //camera_rotation_angle += 1;
@@ -227,6 +287,8 @@ void initGL(GLFWwindow *window, int width, int height) {
     c = Coin(3.5,-2,COLOR_GOLDEN);
     coins.push_back(c);
     count_elements();
+    Beam beam1 = Beam(7,2,1,COLOR_WHITE);
+    beams.push_back(beam1);
 
     platform1 = Platform(500,-1003.05,COLOR_BLACK);
     // Create and compile our GLSL program from the shaders
@@ -297,6 +359,9 @@ float distance(float x1,float y1, float x2, float y2)
     return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }
 
+//a : bounding box of square 1
+//b : bounding box of square 2
+//returns true if collision detected b/w a and b
 bool detect_collision_square(bounding_box_t a, bounding_box_t b) {
     return (abs(a.x - b.x)  < (a.width + b.width)) &&
            (abs(a.y - b.y)  < (a.height + b.height));
@@ -321,7 +386,7 @@ bool detect_collision_line(bounding_box_t l,bounding_box_t p)
         float x=vx[i],y=vy[i];
         float ly = y;
         float lx = l.x + (y-l.y)/(tan(l.rotation*M_PI/180.0));
-        if(abs(lx-x)<=2*l.width)
+        if(abs(lx-x)<=l.width)
         {  
             return true;
         }

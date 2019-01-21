@@ -1,0 +1,19 @@
+- circles around zappers
+- semi circular ring
+- collision with ring
+	
+- draw magnet
+	appears every few seconds at a position and then disappears
+- force by magnet : constant
+
+
+
+- red squares with white outline (gives life)
+
+Done :
+- coins
+- collision with coins
+- zappers
+- collision with zappers
+- moving rods
+- collision with moving rods
