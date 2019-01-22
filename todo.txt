@@ -1,14 +1,23 @@
 - circles around zappers
 - semi circular ring
 - collision with ring
-	
+	goes into the ring only when at the end
+	once in, moves according to the ring
+
 - draw magnet
 	appears every few seconds at a position and then disappears
+	only appears at the top or bottom
 - force by magnet : constant
+- add conditions to prevent overlapping
+- left click should change the position of player, not camera
 
-
-
+- score display
+- life display
+- make beams more beam like [square in corners and lines between them]
 - red squares with white outline (gives life)
+- water balloons thrown by character
+
+
 
 Done :
 - coins

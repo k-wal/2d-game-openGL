@@ -6,18 +6,20 @@ Ball::Ball(float x, float y, color_t color)
     this->position = glm::vec3(x, y, 0);
     this->rotation = 0;
     this->speed_y = 0;
-    this->speed_x=0;
+    this->speed_x=0.00;
     this->acc_x=0.002;
     this->acc_y=0.003;
     this->cur_jump_state=0;
+    this->step_length=0.01;
     int n=3;
-    this->r=0.2f;
+    this->r=0.3f;
     float pi=3.14f;
     this->bound.x = position.x;
     this->bound.y = position.y;
     this->bound.width = this->r;
     this->bound.height = this->r;
     this->bound.rotation = 0;
+    this->in_ring = 0;
     /*
     GLfloat g_vertex_buffer_data[9*n];
     GLfloat temp[3*n];
@@ -90,11 +92,15 @@ void Ball::set_position(float x, float y)
 
 void Ball::tick()
 {
+    if(this->in_ring==1)
+       return;
+
     int screen_left = -4;
     int screen_right = 3;
     int screen_down = -3;
     int screen_up = 3;
 
+    
     if(this->position.x+this->r<=screen_right && this->position.x-this->r>=screen_left)
     {
         this->position.x += this->speed_x;        
@@ -136,6 +142,8 @@ void Ball::tick()
 
 void Ball::left_click()
 {
+    if(this->in_ring==1)
+        return;
     /*
     this->speed_x-=this->acc_x;
     if(this->speed_x == -this->acc_x)
@@ -143,12 +151,15 @@ void Ball::left_click()
         this->position.x += this->speed_x;
     }
     */
-    this->position.x-=0.01;
+    this->position.x-=this->step_length;
     this->update_bounding_box();
 }
 
 void Ball::right_click()
 {
+    if(this->in_ring==1)
+       return;
+
     /*
     this->speed_x+=this->acc_x;
     if(this->speed_x == this->acc_x)
@@ -156,12 +167,15 @@ void Ball::right_click()
         this->position.x += this->speed_x;
     }
     */
-    this->position.x+=0.01;
+    this->position.x+=this->step_length;
     this->update_bounding_box();
 }
 
 void Ball::jump()
 {
+    if(this->in_ring==1)
+       return;
+
     int screen_left = -4;
     int screen_right = 3;
     int screen_down = -3;

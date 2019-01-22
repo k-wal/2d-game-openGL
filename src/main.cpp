@@ -5,6 +5,7 @@
 #include "coin.h"
 #include "platform.h"
 #include "beam.h"
+#include "ring.h"
 
 using namespace std;
 
@@ -21,21 +22,25 @@ Platform platform1;
 vector<Zapper> zappers;
 vector<Coin> coins;
 vector<Beam> beams;
+vector<Ring> rings;
 
 
 float screen_zoom = 1, screen_center_x = 0, screen_center_y = 0;
 float camera_target_x =0;
 float camera_location_x=0;
 float camera_rotation_angle = 0;
-int count_zappers=0;
-int count_coins=0;
-int count_beams=0;
-int zappers_hit=0;
-int beams_hit = 0;
-int score=0;
-int coins_scored=0;
-int life=0;
-int hang=0;
+int count_zappers=0;    //number of zappers currently in range
+int count_coins=0;  //number of coins currently in range
+int count_beams=0;  //number of beams currently in range
+int zappers_hit=0;  //number of zappers hit till now
+int beams_hit = 0;  //number of beams hit till now
+int score=0;    //score
+int coins_scored=0; //number of coins scored till now
+int life=0; //number of lives left
+int hang=0; //how many ticks left to hang
+int life_hang=60;   //how many ticks to hang for when collided by enemy
+
+Ring cur_ring;
 
 Timer t60(1.0 / 60);
 
@@ -77,9 +82,13 @@ void draw()
     glm::mat4 MVP;  // MVP = Projection * View * Model
 
     // Scene render
-    ball1.draw(VP);
     platform1.draw(VP);
     //z.draw(VP);
+    for(int i=0; i<rings.size(); i++)
+    {
+        rings[i].draw(VP);
+    }
+    ball1.draw(VP);
     for(int i=0; i<zappers.size(); i++)
     {
         zappers[i].draw(VP);
@@ -92,6 +101,7 @@ void draw()
     {
         beams[i].draw(VP);
     }
+    
 }
 
 //if number of zappers on the screen is less than one, creates one
@@ -121,8 +131,35 @@ void create_coin()
 {
     if(count_coins>=2)
         return;
-    int rnum=rand();
-    Coin c=Coin(5+camera_location_x,rnum%4-1,COLOR_GOLDEN);
+    Coin c;
+    int flag=1;
+    int iter=0;
+    while(flag)
+    {
+        int rnum=rand();
+        c=Coin(5+camera_location_x,rnum%4-1,COLOR_GOLDEN);
+        flag=0;
+        for(int i=0; i<beams.size(); i++)
+        {
+            if(detect_collision_square(c.bound,beams[i].bound))
+            {
+                flag=1;
+                break;
+            }
+        }
+        for(int i=0; i<zappers.size(); i++)
+        {
+            if(detect_collision_line(zappers[i].bound,c.bound))
+            {
+                flag=1;
+                break;
+            }
+        }
+        //iter++;
+        if(iter>10)
+            return;
+    }
+
     coins.push_back(c);
     count_coins++;
 }
@@ -135,7 +172,7 @@ void count_elements()
     for(int i=0; i<zappers.size(); i++)
     {
         Zapper z=zappers[i];
-        if(z.position.x<camera_location_x-5)
+        if(z.position.x<camera_location_x-7)
         {
             count_zappers--;
         }
@@ -163,7 +200,7 @@ void count_elements()
     for(int i=0; i<beams.size(); i++)
     {
         Beam b=beams[i];
-        if(b.position.x<camera_location_x-8)
+        if(b.position.x<camera_location_x-9)
         {
             count_beams--;
         }
@@ -175,14 +212,36 @@ void count_elements()
     //printf("%d\n",coins_scored);
 }
 
+bool detect_collision_ring(Ring r,bounding_box_t p)
+{
+    float rad = (r.r1+r.r2)/2;
+    if(p.x+p.width>=r.position.x-r.r1 && p.x+p.width<=r.position.x-r.r2)
+    {
+        printf("level1\n");
+        if(p.y-p.height<=r.position.y && p.y+p.height>=r.position.y)
+        {
+            printf("detected\n");
+            return true;
+        }
+    } 
+    return false;
+}
+
 //calls other detection functions and removes collided elements from the screen
 void detect_all_collisions()
 {
+    if(ball1.in_ring)
+    {
+        return;
+    }
     for(int i=0; i<zappers.size(); i++)
     {
         if(detect_collision_line(zappers[i].bound,ball1.bound))
-        {
+        {   
+            if(hang==0 && zappers[i].position.x!=-100)
+                hang = life_hang;
             zappers[i].position.x = -100;
+            
         }
     }
 
@@ -190,6 +249,8 @@ void detect_all_collisions()
     {
         if(detect_collision_square(beams[i].bound,ball1.bound))
         {
+            if(hang==0 && beams[i].position.x!=-100)
+                hang = life_hang;
             beams[i].position.x = -100;
         }
     }
@@ -201,6 +262,43 @@ void detect_all_collisions()
             coins[i].position.x = -100;
         }
     }
+
+    for(int i=0; i<rings.size(); i++)
+    {
+        if(detect_collision_ring(rings[i],ball1.bound))
+        {
+            ball1.position.x = rings[i].position.x - (rings[i].r1+rings[i].r2)/2;
+            ball1.in_ring = 1;
+            cur_ring = rings[i];
+        }
+    }
+}
+
+void set_right_in_ring()
+{
+    //printf("settingg right\n");
+    int s;
+    if(ball1.position.x<cur_ring.position.x)
+        s=1;
+    else
+        s=-1;
+    float x=ball1.position.x,y=ball1.position.y;
+    float r=(cur_ring.r1+cur_ring.r2)/2;
+    printf("ball : %f, ring : %f\n",ball1.position.y,cur_ring.position.y);
+    float newy=r*r - (s*(cur_ring.position.x-x)-0.01)*(s*(cur_ring.position.x-x)-0.01);
+    printf("r : %f\n",r);
+    printf("new y1 : %f\n",newy);
+    newy = sqrt(newy);
+    //newy = cur_ring.position.y + s*newy;
+    newy = cur_ring.position.y + newy;
+    float newx = x+0.01;
+    ball1.position.x = newx;
+    ball1.position.y = newy;
+    if(ball1.position.x>=cur_ring.position.x+r && !detect_collision_ring(cur_ring,ball1.bound))
+    {
+        ball1.in_ring=0;
+        ball1.speed_y+=-1;
+    }  
 }
 
 void tick_input(GLFWwindow *window)
@@ -227,6 +325,8 @@ void tick_input(GLFWwindow *window)
         ball1.right_click();
         camera_location_x+=0.01;
         camera_target_x+=0.01;
+        if(ball1.in_ring)
+            set_right_in_ring();
         detect_all_collisions();
         create_zapper();
         create_coin();
@@ -290,6 +390,8 @@ void initGL(GLFWwindow *window, int width, int height) {
     Beam beam1 = Beam(7,2,1,COLOR_WHITE);
     beams.push_back(beam1);
 
+    Ring ring1 = Ring(10,0,COLOR_GREEN,COLOR_BACKGROUND);
+    rings.push_back(ring1);
     platform1 = Platform(500,-1003.05,COLOR_BLACK);
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");
