@@ -212,19 +212,24 @@ void count_elements()
     //printf("%d\n",coins_scored);
 }
 
-bool detect_collision_ring(Ring r,bounding_box_t p)
+// -1 : collision at right
+// +1 : collision at left
+int detect_collision_ring(Ring r,bounding_box_t p)
 {
     float rad = (r.r1+r.r2)/2;
-    if(p.x+p.width>=r.position.x-r.r1 && p.x+p.width<=r.position.x-r.r2)
+    float x=r.position.x,y=r.position.y;
+    if(y<=p.y+p.height && y>=p.y-p.height)
     {
-        printf("level1\n");
-        if(p.y-p.height<=r.position.y && p.y+p.height>=r.position.y)
+        if((x-rad)<=p.x+p.width && (x-rad)>=p.x-p.width)
         {
-            printf("detected\n");
-            return true;
+            return 1;
         }
-    } 
-    return false;
+        if((x+rad)<=p.x+p.width && (x+rad)>=p.x-p.width)
+        {
+            return -1;
+        }
+    }
+    return 0;
 }
 
 //calls other detection functions and removes collided elements from the screen
@@ -265,18 +270,27 @@ void detect_all_collisions()
 
     for(int i=0; i<rings.size(); i++)
     {
-        if(detect_collision_ring(rings[i],ball1.bound))
+        if(detect_collision_ring(rings[i],ball1.bound)==1)
         {
             ball1.position.x = rings[i].position.x - (rings[i].r1+rings[i].r2)/2;
             ball1.in_ring = 1;
             cur_ring = rings[i];
+            printf("set at right\n");
         }
+        if(detect_collision_ring(rings[i],ball1.bound)==-1)
+        {
+            ball1.position.x = rings[i].position.x + (rings[i].r1+rings[i].r2)/2;
+            ball1.in_ring = 1;
+            cur_ring = rings[i];
+        }
+
     }
 }
 
-void set_right_in_ring()
+void move_right_in_ring()
 {
-    //printf("settingg right\n");
+    if(ball1.in_ring==0)
+        return;
     int s;
     if(ball1.position.x<cur_ring.position.x)
         s=1;
@@ -284,20 +298,46 @@ void set_right_in_ring()
         s=-1;
     float x=ball1.position.x,y=ball1.position.y;
     float r=(cur_ring.r1+cur_ring.r2)/2;
-    printf("ball : %f, ring : %f\n",ball1.position.y,cur_ring.position.y);
     float newy=r*r - (s*(cur_ring.position.x-x)-0.01)*(s*(cur_ring.position.x-x)-0.01);
-    printf("r : %f\n",r);
-    printf("new y1 : %f\n",newy);
     newy = sqrt(newy);
-    //newy = cur_ring.position.y + s*newy;
     newy = cur_ring.position.y + newy;
     float newx = x+0.01;
     ball1.position.x = newx;
     ball1.position.y = newy;
-    if(ball1.position.x>=cur_ring.position.x+r && !detect_collision_ring(cur_ring,ball1.bound))
+   
+    if(ball1.position.x>=cur_ring.position.x+r)
     {
+        printf("setting free after right\n");
+        ball1.position.y-=0.5;
         ball1.in_ring=0;
-        ball1.speed_y+=-1;
+        ball1.speed_y=0;
+    }  
+}
+
+void move_left_in_ring()
+{
+    if(ball1.in_ring==0)
+        return;
+    int s;
+    if(ball1.position.x<cur_ring.position.x)
+        s=-1;
+    else
+        s=1;
+    float x=ball1.position.x,y=ball1.position.y;
+    float r=(cur_ring.r1+cur_ring.r2)/2;
+    float newy=r*r - (s*(cur_ring.position.x-x)-0.01)*(s*(cur_ring.position.x-x)-0.01);
+    newy = sqrt(newy);
+    newy = cur_ring.position.y + newy;
+    float newx = x-0.01;
+    ball1.position.x = newx;
+    ball1.position.y = newy;
+    
+    if(ball1.position.x<=cur_ring.position.x-r)
+    {
+        printf("setting free after left\n");
+        ball1.in_ring=0;
+        ball1.speed_y=0;
+        ball1.position.y-=0.5;
     }  
 }
 
@@ -319,15 +359,19 @@ void tick_input(GLFWwindow *window)
         camera_location_x-=0.01;
         camera_target_x-=0.01;
         detect_all_collisions();
+
+        if(ball1.in_ring)
+            move_left_in_ring();
+        
     }
     if(right)
     {
         ball1.right_click();
         camera_location_x+=0.01;
         camera_target_x+=0.01;
-        if(ball1.in_ring)
-            set_right_in_ring();
         detect_all_collisions();
+        if(ball1.in_ring)
+            move_right_in_ring();
         create_zapper();
         create_coin();
         create_beam();
