@@ -1,3 +1,0 @@
-/home/anshita/Assignments/2-2/graphics/2d-game/src/CMakeFiles/CMakeTmp/CMakeFiles/edit_cache.dir
-/home/anshita/Assignments/2-2/graphics/2d-game/src/CMakeFiles/CMakeTmp/CMakeFiles/rebuild_cache.dir
-/home/anshita/Assignments/2-2/graphics/2d-game/src/CMakeFiles/CMakeTmp/CMakeFiles/cmTC_a16ed.dir
