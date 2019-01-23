@@ -7,6 +7,7 @@
 #include "beam.h"
 #include "ring.h"
 #include "segment.h"
+#include "circle.h"
 
 using namespace std;
 
@@ -44,6 +45,8 @@ float step_length = 0.02;
 
 Segment digit[5][8]; 
 
+Circle life_circles[10];
+
 int num_digits = 5;
 
 Ring cur_ring;
@@ -79,7 +82,13 @@ void draw_score(glm::mat4 VP)
     }
 }
 
-
+void draw_life_circles(glm::mat4 VP)
+{
+    for(int i=0; i<life; i++)
+    {
+        life_circles[i].draw(VP);
+    }
+}
 
 
 /* Render the scene with openGL */
@@ -145,7 +154,7 @@ void draw()
         beams[i].draw(VP);
     }
     draw_score(VP);
-    
+    draw_life_circles(VP);
 }
 
 //if number of zappers on the screen is less than one, creates one
@@ -416,6 +425,11 @@ void tick_input(GLFWwindow *window)
                 digit[i][j].position.x-=step_length;
             }
         }
+        for(int i=0; i<10; i++)
+        {
+            life_circles[i].position.x -= step_length;
+        }
+
         
     }
     if(right)
@@ -433,6 +447,10 @@ void tick_input(GLFWwindow *window)
             {
                 digit[i][j].position.x+=step_length;
             }
+        }
+        for(int i=0; i<10; i++)
+        {
+            life_circles[i].position.x += step_length;
         }
 
 
@@ -481,6 +499,20 @@ void tick_elements(GLFWwindow *window)
 }
 
 
+void init_life_circles()
+{
+    float x = -3.5;
+    float x_diff = 0.4;
+    float y = -3.55;
+    float r = 0.1;
+    for(int i=0; i<10; i++)
+    {
+        life_circles[i] = Circle(x,y,COLOR_DARK_RED);
+        x += x_diff;
+    }
+}
+
+
 void init_segments()
 {
     float x = 3.5;
@@ -525,6 +557,8 @@ void initGL(GLFWwindow *window, int width, int height) {
     beams.push_back(beam1);
 
     init_segments();
+
+    init_life_circles();
 
     Ring ring1 = Ring(10,0,COLOR_GREEN,COLOR_BACKGROUND);
     rings.push_back(ring1);
