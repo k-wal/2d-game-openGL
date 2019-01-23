@@ -42,12 +42,45 @@ int life_hang=60;   //how many ticks to hang for when collided by enemy
 int space_pressed=0; //if space pressed=1, else 0
 float step_length = 0.02;
 
-Beam digit[3][8]; 
+Segment digit[5][8]; 
 
+int num_digits = 5;
 
 Ring cur_ring;
 
 Timer t60(1.0 / 60);
+
+void draw_score(glm::mat4 VP)
+{
+    int lines[10][8] = 
+    {{0,1,2,3,0,5,6,7},
+    {0,0,0,3,0,0,6,0},
+    {0,1,0,3,4,5,0,7},
+    {0,1,0,3,4,0,6,7},
+    {0,0,2,3,4,0,6,0},
+    {0,1,2,0,4,0,6,7},
+    {0,1,2,0,4,5,6,7},
+    {0,1,0,3,0,0,6,0},
+    {0,1,2,3,4,5,6,7},
+    {0,1,2,3,4,0,6,7}};
+    
+    int temp = score;
+    for(int i=0; i<5; i++)
+    {
+        for(int j=1; j<=7; j++)
+        {
+            if(lines[temp%10][j]!=0)
+            {
+                digit[i][j].draw(VP);
+
+            }
+        }
+        temp/=10;
+    }
+}
+
+
+
 
 /* Render the scene with openGL */
 /* Edit this function according to your assignment */
@@ -111,7 +144,7 @@ void draw()
     {
         beams[i].draw(VP);
     }
-    int temp=score;
+    draw_score(VP);
     
 }
 
@@ -375,6 +408,14 @@ void tick_input(GLFWwindow *window)
 
         if(ball1.in_ring)
             move_left_in_ring();
+
+        for(int i=0; i<5; i++)
+        {
+            for(int j=1; j<=7; j++)
+            {
+                digit[i][j].position.x-=step_length;
+            }
+        }
         
     }
     if(right)
@@ -385,6 +426,16 @@ void tick_input(GLFWwindow *window)
         detect_all_collisions();
         if(ball1.in_ring)
             move_right_in_ring();
+
+        for(int i=0; i<5; i++)
+        {
+            for(int j=1; j<=7; j++)
+            {
+                digit[i][j].position.x+=step_length;
+            }
+        }
+
+
         create_zapper();
         create_coin();
         create_beam();
@@ -429,20 +480,30 @@ void tick_elements(GLFWwindow *window)
     //camera_rotation_angle += 1;
 }
 
-/*
+
 void init_segments()
 {
     float x = 3.5;
-    float x_diff = 0.5;
+    float x_diff = 0.34;
     float y = -3.6;
+    float w = 0.12;
+
 
     for(int i=0; i<5; i++)
     {
-        digit[i][1] = Segment()
+        digit[i][1] = Segment(x,y+2*w,0,w,COLOR_WHITE);
+        digit[i][2] = Segment(x-w,y+w,90,w,COLOR_WHITE);
+        digit[i][3] = Segment(x+w,y+w,90,w,COLOR_WHITE);
+        digit[i][4] = Segment(x,y,0,w,COLOR_WHITE);
+        digit[i][5] = Segment(x-w,y-w,90,w,COLOR_WHITE);
+        digit[i][6] = Segment(x+w,y-w,90,w,COLOR_WHITE);
+        digit[i][7] = Segment(x,y-w*2,0,w,COLOR_WHITE);
+        x-=x_diff;
     }
 
+
 }
-*/
+
 
 /* Initialize the OpenGL rendering properties */
 /* Add all the models to be created here */
@@ -462,6 +523,8 @@ void initGL(GLFWwindow *window, int width, int height) {
     count_elements();
     Beam beam1 = Beam(7,2,1,COLOR_WHITE,0.07);
     beams.push_back(beam1);
+
+    init_segments();
 
     Ring ring1 = Ring(10,0,COLOR_GREEN,COLOR_BACKGROUND);
     rings.push_back(ring1);
