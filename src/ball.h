@@ -7,10 +7,11 @@
 class Ball {
 public:
     Ball() {}
-    Ball(float x, float y, color_t color);
+    Ball(float x, float y, color_t color,color_t color_fire);
     glm::vec3 position;
     float rotation;
     void draw(glm::mat4 VP);
+    void draw_fire(glm::mat4 VP);
     void set_position(float x, float y);
     void tick();
     double speed_y;
@@ -32,6 +33,7 @@ public:
     void update_bounding_box();
 private:
     VAO *object;
+    VAO *fire;
 };
 
 #endif // BALL_H

@@ -6,6 +6,7 @@
 #include "platform.h"
 #include "beam.h"
 #include "ring.h"
+#include "segment.h"
 
 using namespace std;
 
@@ -24,7 +25,6 @@ vector<Coin> coins;
 vector<Beam> beams;
 vector<Ring> rings;
 
-
 float screen_zoom = 1, screen_center_x = 0, screen_center_y = 0;
 float camera_target_x =0;
 float camera_location_x=0;
@@ -39,6 +39,11 @@ int coins_scored=0; //number of coins scored till now
 int life=0; //number of lives left
 int hang=0; //how many ticks left to hang
 int life_hang=60;   //how many ticks to hang for when collided by enemy
+int space_pressed=0; //if space pressed=1, else 0
+float step_length = 0.02;
+
+Beam digit[3][8]; 
+
 
 Ring cur_ring;
 
@@ -89,6 +94,11 @@ void draw()
         rings[i].draw(VP);
     }
     ball1.draw(VP);
+    if(space_pressed)
+    {
+        ball1.draw_fire(VP);
+        space_pressed=0;
+    }
     for(int i=0; i<zappers.size(); i++)
     {
         zappers[i].draw(VP);
@@ -101,6 +111,7 @@ void draw()
     {
         beams[i].draw(VP);
     }
+    int temp=score;
     
 }
 
@@ -120,7 +131,7 @@ void create_beam()
     if(count_beams>=1)
         return;
     int rnum=rand();
-    Beam b = Beam(5+camera_location_x,rnum%5-2,1,COLOR_WHITE);
+    Beam b = Beam(5+camera_location_x,rnum%5-2,1,COLOR_WHITE,0.07);
     beams.push_back(b);
     count_beams++;
 }
@@ -298,19 +309,21 @@ void move_right_in_ring()
         s=-1;
     float x=ball1.position.x,y=ball1.position.y;
     float r=(cur_ring.r1+cur_ring.r2)/2;
-    float newy=r*r - (s*(cur_ring.position.x-x)-0.01)*(s*(cur_ring.position.x-x)-0.01);
-    newy = sqrt(newy);
+    float newy=r*r - (s*(cur_ring.position.x-x)-step_length)*(s*(cur_ring.position.x-x)-step_length);
+    newy = sqrt(abs(newy));
     newy = cur_ring.position.y + newy;
-    float newx = x+0.01;
+    float newx = x+step_length;
     ball1.position.x = newx;
     ball1.position.y = newy;
    
     if(ball1.position.x>=cur_ring.position.x+r)
     {
-        printf("setting free after right\n");
-        ball1.position.y-=0.5;
+        //printf("setting free after right\n");
+        ball1.position.y-=0.6;
         ball1.in_ring=0;
         ball1.speed_y=0;
+        //printf("collision : %d\n",detect_collision_ring(cur_ring,ball1.bound));
+
     }  
 }
 
@@ -325,10 +338,10 @@ void move_left_in_ring()
         s=1;
     float x=ball1.position.x,y=ball1.position.y;
     float r=(cur_ring.r1+cur_ring.r2)/2;
-    float newy=r*r - (s*(cur_ring.position.x-x)-0.01)*(s*(cur_ring.position.x-x)-0.01);
-    newy = sqrt(newy);
+    float newy=r*r - (s*(cur_ring.position.x-x)-step_length)*(s*(cur_ring.position.x-x)-step_length);
+    newy = sqrt(abs(newy));
     newy = cur_ring.position.y + newy;
-    float newx = x-0.01;
+    float newx = x - step_length;
     ball1.position.x = newx;
     ball1.position.y = newy;
     
@@ -356,8 +369,8 @@ void tick_input(GLFWwindow *window)
     if (left)
     {
         ball1.left_click();
-        camera_location_x-=0.01;
-        camera_target_x-=0.01;
+        camera_location_x-=step_length;
+        camera_target_x-=step_length;
         detect_all_collisions();
 
         if(ball1.in_ring)
@@ -367,8 +380,8 @@ void tick_input(GLFWwindow *window)
     if(right)
     {
         ball1.right_click();
-        camera_location_x+=0.01;
-        camera_target_x+=0.01;
+        camera_location_x+=step_length;
+        camera_target_x+=step_length;
         detect_all_collisions();
         if(ball1.in_ring)
             move_right_in_ring();
@@ -380,6 +393,7 @@ void tick_input(GLFWwindow *window)
     //    glm::vec3 target (screen_center_x, 0, 0);
     if(space)
     {
+        space_pressed=1;
         ball1.jump();
         detect_all_collisions();
     }
@@ -415,13 +429,28 @@ void tick_elements(GLFWwindow *window)
     //camera_rotation_angle += 1;
 }
 
+/*
+void init_segments()
+{
+    float x = 3.5;
+    float x_diff = 0.5;
+    float y = -3.6;
+
+    for(int i=0; i<5; i++)
+    {
+        digit[i][1] = Segment()
+    }
+
+}
+*/
+
 /* Initialize the OpenGL rendering properties */
 /* Add all the models to be created here */
 void initGL(GLFWwindow *window, int width, int height) {
     /* Objects should be created before any other gl function and shaders */
     // Create the models
 
-    ball1 = Ball(0, 0, COLOR_RED);
+    ball1 = Ball(0, 0, COLOR_RED, COLOR_ORANGE);
     Zapper z = Zapper(1,2,30,1.2,COLOR_YELLOW);
     zappers.push_back(z);
     z = Zapper(4,1,60,1.2,COLOR_YELLOW);
@@ -431,7 +460,7 @@ void initGL(GLFWwindow *window, int width, int height) {
     c = Coin(3.5,-2,COLOR_GOLDEN);
     coins.push_back(c);
     count_elements();
-    Beam beam1 = Beam(7,2,1,COLOR_WHITE);
+    Beam beam1 = Beam(7,2,1,COLOR_WHITE,0.07);
     beams.push_back(beam1);
 
     Ring ring1 = Ring(10,0,COLOR_GREEN,COLOR_BACKGROUND);

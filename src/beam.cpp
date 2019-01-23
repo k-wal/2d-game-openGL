@@ -1,12 +1,12 @@
 #include "beam.h"
 #include "main.h"
 
-Beam::Beam(float x, float y,float width, color_t color)
+Beam::Beam(float x, float y,float width, color_t color,float thickness)
 {
     this->position = glm::vec3(x, y, 0);
     this->rotation = 0;
     this->width = width;
-    this->thickness = 0.07;
+    this->thickness = thickness;
     this->bound.x = position.x;
     this->bound.y = position.y;
     this->bound.width = this->width;

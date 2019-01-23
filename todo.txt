@@ -1,8 +1,6 @@
 - circles around zappers
-- semi circular ring
 - collision with ring
-	goes into the ring only when at the end
-	once in, moves according to the ring
+	- entering from right side and exiting from left makes it disappear, no idea why
 
 - draw magnet
 	appears every few seconds at a position and then disappears
@@ -26,3 +24,7 @@ Done :
 - collision with zappers
 - moving rods
 - collision with moving rods
+- semi circular ring
+	goes into the ring only when at the end
+	once in, moves according to the ring
+- fire blows out of square when space pressed

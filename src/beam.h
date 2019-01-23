@@ -7,7 +7,7 @@
 class Beam {
 public:
     Beam() {}
-    Beam(float x, float y, float width,color_t color);
+    Beam(float x, float y, float width,color_t color,float thickness);
     glm::vec3 position;
     float rotation;
     void draw(glm::mat4 VP);
