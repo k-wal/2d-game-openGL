@@ -8,6 +8,7 @@
 #include "ring.h"
 #include "segment.h"
 #include "circle.h"
+#include "balloon.h"
 
 using namespace std;
 
@@ -25,6 +26,7 @@ vector<Zapper> zappers;
 vector<Coin> coins;
 vector<Beam> beams;
 vector<Ring> rings;
+vector<Balloon> balloons;
 
 float screen_zoom = 1, screen_center_x = 0, screen_center_y = 0;
 float camera_target_x =0;
@@ -32,7 +34,7 @@ float camera_location_x=0;
 float camera_rotation_angle = 0;
 int count_zappers=0;    //number of zappers currently in range
 int count_coins=0;  //number of coins currently in range
-int count_beams=0;  //number of beams currently in range
+int count_beams=1;  //number of beams currently in range
 int zappers_hit=0;  //number of zappers hit till now
 int beams_hit = 0;  //number of beams hit till now
 int score=0;    //score
@@ -42,6 +44,9 @@ int hang=0; //how many ticks left to hang
 int life_hang=60;   //how many ticks to hang for when collided by enemy
 int space_pressed=0; //if space pressed=1, else 0
 float step_length = 0.02;
+int zappers_scored = 0;
+int beams_scored = 0;
+int balloon_wait=0;
 
 Segment digit[5][8]; 
 
@@ -153,6 +158,11 @@ void draw()
     {
         beams[i].draw(VP);
     }
+    for(int i=0; i<balloons.size(); i++)
+    {
+        balloons[i].draw(VP);
+    }
+    
     draw_score(VP);
     draw_life_circles(VP);
 }
@@ -164,13 +174,26 @@ void create_zapper()
         return;
     int rnum=rand();
     Zapper z=Zapper(5+camera_location_x,rnum%5-1,rnum%120+30,1.4,COLOR_YELLOW);
+    for(int i=0; i<coins.size(); i++)
+    {
+        if(detect_collision_line(z.bound,coins[i].bound))
+        {
+            return;
+        }
+    }
     zappers.push_back(z);
     count_zappers++;
 }
 
 void create_beam()
 {
+    
     if(count_beams>=1)
+        return;
+    
+    int r=rand();
+    r%=1000;
+    if(r>3)
         return;
     int rnum=rand();
     Beam b = Beam(5+camera_location_x,rnum%5-2,1,COLOR_WHITE,0.07);
@@ -182,39 +205,55 @@ void create_beam()
 //if number of coins on screen are less than 2, creates more coins
 void create_coin()
 {
-    if(count_coins>=2)
+    
+/*    if(count_coins>=2)
+        return;*/
+    int r=rand();
+    r%=1000;
+    if(r>7)
         return;
+
+
+    int rnum=rand();
+    int ny = (rand()%5+2)/2;
+    int nx = (rand()%5+2)/2;
+    ny*=2;
+    nx*=2;
+    float x_start = 5+camera_location_x;
+    float x_diff = 0.3f;
+    float y_start = rnum%4-2;
+    float y_diff = 0.3f;
+    bounding_box_t b;
+    b.x = x_start + (x_diff)*nx/2;
+    b.y = y_start + (y_diff)*ny/2;
+    b.width = (x_diff+1)*nx;
+    b.height = (y_diff+1)*ny;
     Coin c;
-    int flag=1;
-    int iter=0;
-    while(flag)
+    c=Coin(5+camera_location_x,rnum%4-1,COLOR_GOLDEN);
+
+
+    for(int i=0; i<zappers.size(); i++)
     {
-        int rnum=rand();
-        c=Coin(5+camera_location_x,rnum%4-1,COLOR_GOLDEN);
-        flag=0;
-        for(int i=0; i<beams.size(); i++)
-        {
-            if(detect_collision_square(c.bound,beams[i].bound))
-            {
-                flag=1;
-                break;
-            }
-        }
-        for(int i=0; i<zappers.size(); i++)
-        {
-            if(detect_collision_line(zappers[i].bound,c.bound))
-            {
-                flag=1;
-                break;
-            }
-        }
-        //iter++;
-        if(iter>10)
+        if(detect_collision_line(zappers[i].bound,b))
+            return;
+        Zapper z=zappers[i];
+    }
+    for(int i=0; i<coins.size(); i++)
+    {
+        if(detect_collision_square(coins[i].bound,b))
             return;
     }
 
-    coins.push_back(c);
-    count_coins++;
+    for(int i=0; i<ny; i++)
+    {
+        for(int j=0; j<nx; j++)
+        {
+            c=Coin(x_start+i*x_diff,y_start+j*y_diff,COLOR_GOLDEN);
+            coins.push_back(c);
+            count_coins++;
+
+        }
+    }
 }
 
 //counts numbers of each element on the screen and counts zappers hit and coins scored
@@ -222,6 +261,7 @@ void count_elements()
 {
     count_zappers=zappers.size();
     zappers_hit=0;
+    zappers_scored=0;
     for(int i=0; i<zappers.size(); i++)
     {
         Zapper z=zappers[i];
@@ -232,6 +272,10 @@ void count_elements()
         if(z.position.x==-100)
         {
             zappers_hit++;
+        }
+        if(z.position.x==-200)
+        {
+            zappers_scored++;
         }
     }
     count_coins=coins.size();
@@ -250,6 +294,7 @@ void count_elements()
     }
     count_beams=beams.size();
     beams_hit=0;
+    beams_scored=0;
     for(int i=0; i<beams.size(); i++)
     {
         Beam b=beams[i];
@@ -260,6 +305,10 @@ void count_elements()
         if(b.position.x==-100)
         {
             beams_hit++;
+        }
+        if(b.position.x == -200)
+        {
+            beams_scored++;
         }
     }
     //printf("%d\n",coins_scored);
@@ -285,6 +334,40 @@ int detect_collision_ring(Ring r,bounding_box_t p)
     return 0;
 }
 
+// returns true if a balloon collides with z
+bool detect_balloon_collision_zapper(bounding_box_t z)
+{
+    for(int i=0; i<balloons.size(); i++)
+    {
+        if(balloons[i].is_exist==1)
+        {
+            if(detect_collision_line(z,balloons[i].bound))
+            {
+                balloons[i].is_exist=0;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// returns true if a balloon hit b
+bool detect_balloon_collision_beam(bounding_box_t b)
+{
+    for(int i=0; i<balloons.size(); i++)
+    {
+        if(balloons[i].is_exist==1)
+        {
+            if(detect_collision_square(b,balloons[i].bound))
+            {
+                balloons[i].is_exist=0;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 //calls other detection functions and removes collided elements from the screen
 void detect_all_collisions()
 {
@@ -296,10 +379,16 @@ void detect_all_collisions()
     {
         if(detect_collision_line(zappers[i].bound,ball1.bound))
         {   
-            if(hang==0 && zappers[i].position.x!=-100)
+            if(hang==0 && zappers[i].position.x>-100)
                 hang = life_hang;
             zappers[i].position.x = -100;
+            zappers[i].bound.x = -100;
             
+        }
+        if(detect_balloon_collision_zapper(zappers[i].bound))
+        {
+            zappers[i].position.x = -200;
+            zappers[i].bound.x = -200;
         }
     }
 
@@ -310,7 +399,16 @@ void detect_all_collisions()
             if(hang==0 && beams[i].position.x!=-100)
                 hang = life_hang;
             beams[i].position.x = -100;
+            beams[i].update_bounding_box();
+            count_beams--;
         }
+        if(detect_balloon_collision_beam(beams[i].bound))
+        {
+            beams[i].position.x = -200;
+            beams[i].update_bounding_box();
+            count_beams--;
+        }
+
     }
     
     for(int i=0; i<coins.size(); i++)
@@ -405,6 +503,7 @@ void tick_input(GLFWwindow *window)
     int left  = glfwGetKey(window, GLFW_KEY_LEFT);
     int right = glfwGetKey(window, GLFW_KEY_RIGHT);
     int space = glfwGetKey(window, GLFW_KEY_SPACE);
+    int b = glfwGetKey(window, GLFW_KEY_B);
     //int up  = glfwGetKey(window, GLFW_KEY_UP);
     //int down = glfwGetKey(window, GLFW_KEY_DOWN);
     
@@ -458,6 +557,16 @@ void tick_input(GLFWwindow *window)
         create_coin();
         create_beam();
     }
+
+    if(b)
+    {
+        if(balloon_wait==0)
+        {
+            Balloon bal = Balloon(ball1.position.x+ball1.bound.width,ball1.position.y,COLOR_BLUE);
+            balloons.push_back(bal);
+            balloon_wait=15;
+        }
+    }
   
     //    glm::vec3 target (screen_center_x, 0, 0);
     if(space)
@@ -475,6 +584,10 @@ void tick_elements(GLFWwindow *window)
     {
         return;
     }
+    if(balloon_wait>0)
+    {
+        balloon_wait--;
+    }
     char title[1000];
     ball1.tick();
     for(int i=0; i<coins.size(); i++)
@@ -489,9 +602,21 @@ void tick_elements(GLFWwindow *window)
     {
         beams[i].tick();
     }
+    int x=0;
+    for(int i=0; i<balloons.size(); i++)
+    {
+        balloons[i].tick();
+        if(balloons[i].is_exist==0)
+            x++;
+    }
+    if(x==balloons.size())
+    {
+        balloons.clear();
+    }
+    
     detect_all_collisions();
     count_elements();
-    score=coins_scored*5;
+    score=coins_scored*5+zappers_scored+beams_scored;
     life=5-zappers_hit-beams_hit;
     sprintf(title,"SCORE : %d\t LIFE : %d",score,life);
     glfwSetWindowTitle(window,title);
@@ -548,10 +673,10 @@ void initGL(GLFWwindow *window, int width, int height) {
     zappers.push_back(z);
     z = Zapper(4,1,60,1.2,COLOR_YELLOW);
     zappers.push_back(z);
-    Coin c = Coin(1.5,0,COLOR_GOLDEN);
+/*    Coin c = Coin(1.5,0,COLOR_GOLDEN);
     coins.push_back(c);
     c = Coin(3.5,-2,COLOR_GOLDEN);
-    coins.push_back(c);
+    coins.push_back(c);*/
     count_elements();
     Beam beam1 = Beam(7,2,1,COLOR_WHITE,0.07);
     beams.push_back(beam1);
