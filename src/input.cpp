@@ -82,6 +82,16 @@ void mouseButton(GLFWwindow *window, int button, int action, int mods) {
     }
 }
 
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
-    // Do something
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    if(yoffset>0)
+    {
+        screen_zoom++;
+    }
+    if(yoffset<0)
+    {
+        screen_zoom--;
+    }
+    Matrices.projection = glm::perspective(glm::radians(screen_zoom),600.0f/600.0f,0.1f,100.0f);
+
 }

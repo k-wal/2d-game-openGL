@@ -83,6 +83,7 @@ typedef struct screen_boundaries
 } screen;
 
 
+
 bool detect_collision_square(bounding_box_t a, bounding_box_t b);
 
 bool detect_collision_line(bounding_box_t a, bounding_box_t b);

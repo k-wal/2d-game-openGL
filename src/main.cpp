@@ -28,7 +28,8 @@ vector<Beam> beams;
 vector<Ring> rings;
 vector<Balloon> balloons;
 
-float screen_zoom = 1, screen_center_x = 0, screen_center_y = 0;
+float default_zoom = 107;
+float screen_zoom = default_zoom, screen_center_x = 0, screen_center_y = 0;
 float camera_target_x =0;
 float camera_location_x=0;
 float camera_rotation_angle = 0;
@@ -123,6 +124,8 @@ void draw()
     //Matrices.view = glm::lookAt( eye, target, up ); // Rotating Camera for 3D
     // Don't change unless you are sure!!
     Matrices.view = glm::lookAt(glm::vec3(camera_location_x, 0, 3), glm::vec3(camera_target_x, 0, 0), glm::vec3(0, 1, 0)); // Fixed camera for 2D (ortho) in XY plane
+
+    Matrices.projection = glm::perspective(glm::radians(screen_zoom),600.0f/600.0f,0.1f,100.0f);
 
     // Compute ViewProject matrix as view/camera might not be changed for this frame (basic scenario)
     // Don't change unless you are sure!!
@@ -504,6 +507,7 @@ void tick_input(GLFWwindow *window)
     int right = glfwGetKey(window, GLFW_KEY_RIGHT);
     int space = glfwGetKey(window, GLFW_KEY_SPACE);
     int b = glfwGetKey(window, GLFW_KEY_B);
+    int s = glfwGetKey(window, GLFW_KEY_S);
     //int up  = glfwGetKey(window, GLFW_KEY_UP);
     //int down = glfwGetKey(window, GLFW_KEY_DOWN);
     
@@ -566,6 +570,12 @@ void tick_input(GLFWwindow *window)
             balloons.push_back(bal);
             balloon_wait=15;
         }
+    }
+    if(s)
+    {
+        screen_zoom=default_zoom;
+        Matrices.projection = glm::perspective(glm::radians(screen_zoom),600.0f/600.0f,0.1f,100.0f);
+//        reset_screen();
     }
   
     //    glm::vec3 target (screen_center_x, 0, 0);
