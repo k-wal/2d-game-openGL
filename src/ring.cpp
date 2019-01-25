@@ -11,8 +11,8 @@ Ring::Ring(float x, float y,color_t color1,color_t color2)
     //this->width = width;
     this->bound.x = position.x;
     this->bound.y = position.y;
-    //this->bound.width = this->thickness;
-    //this->bound.height = this->width;
+    this->bound.width = this->r1;
+    this->bound.height = this->r1;
     //this->bound.rotation = this->rotation;
     int n=360;
     float pi = M_PI;

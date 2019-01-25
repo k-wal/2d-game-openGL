@@ -36,6 +36,7 @@ float camera_rotation_angle = 0;
 int count_zappers=0;    //number of zappers currently in range
 int count_coins=0;  //number of coins currently in range
 int count_beams=1;  //number of beams currently in range
+int count_rings=0;
 int zappers_hit=0;  //number of zappers hit till now
 int beams_hit = 0;  //number of beams hit till now
 int score=0;    //score
@@ -177,16 +178,58 @@ void create_zapper()
         return;
     int rnum=rand();
     Zapper z=Zapper(5+camera_location_x,rnum%5-1,rnum%120+30,1.4,COLOR_YELLOW);
+    bounding_box_t b;
+    b.x = z.position.x;
+    b.y = z.position.y;
+    b.width = z.width;
+    b.height = z.width;
     for(int i=0; i<coins.size(); i++)
     {
-        if(detect_collision_line(z.bound,coins[i].bound))
+        if(detect_collision_square(b,coins[i].bound))
         {
+        //    printf("collision with coins detected : creating coins\n");
+            return;
+        }
+    }
+    for(int i=0; i<rings.size(); i++)
+    {
+        if(detect_collision_square(b,rings[i].bound))
+        {
+        //    printf("collision detected : creating zapper\n");
+        
             return;
         }
     }
     zappers.push_back(z);
     count_zappers++;
 }
+
+void create_ring()
+{
+    if(count_rings>=1)
+        return;
+    int rnum = rand();
+
+    Ring ring1 = Ring(10+camera_location_x,rnum%2-1,COLOR_GREEN,COLOR_BACKGROUND);
+    for(int i=0; i<coins.size(); i++)
+    {
+        if(detect_collision_square(coins[i].bound,ring1.bound))
+            return;
+    }
+    for(int i=0; i<zappers.size(); i++)
+    {
+        if(detect_collision_line(zappers[i].bound,ring1.bound))
+        {
+            printf("collision detected : creating ring\n");
+            return;
+        }
+    }
+
+    rings.push_back(ring1);
+    
+    
+}
+
 
 void create_beam()
 {
@@ -213,16 +256,16 @@ void create_coin()
         return;*/
     int r=rand();
     r%=1000;
-    if(r>7)
+    if(r>15)
         return;
 
 
     int rnum=rand();
-    int ny = (rand()%5+2)/2;
-    int nx = (rand()%5+2)/2;
+    int ny = (rand()%5+3)/2;
+    int nx = (rand()%5+3)/2;
     ny*=2;
     nx*=2;
-    float x_start = 5+camera_location_x;
+    float x_start = 8+camera_location_x;
     float x_diff = 0.3f;
     float y_start = rnum%4-2;
     float y_diff = 0.3f;
@@ -232,7 +275,7 @@ void create_coin()
     b.width = (x_diff+1)*nx;
     b.height = (y_diff+1)*ny;
     Coin c;
-    c=Coin(5+camera_location_x,rnum%4-1,COLOR_GOLDEN);
+    c=Coin(4+camera_location_x,rnum%4-1,COLOR_GOLDEN);
 
 
     for(int i=0; i<zappers.size(); i++)
@@ -244,6 +287,11 @@ void create_coin()
     for(int i=0; i<coins.size(); i++)
     {
         if(detect_collision_square(coins[i].bound,b))
+            return;
+    }
+    for(int i=0; i<rings.size(); i++)
+    {
+        if(detect_collision_square(rings[i].bound,b))
             return;
     }
 
@@ -313,6 +361,16 @@ void count_elements()
         {
             beams_scored++;
         }
+    }
+
+    count_rings=0;
+    for(int i=rings.size()-1; i>=0; i--)
+    {
+        Ring r=rings[i];
+        if(r.position.x>camera_location_x-8)
+            count_rings++;
+        else
+            break;
     }
     //printf("%d\n",coins_scored);
 }
@@ -414,7 +472,7 @@ void detect_all_collisions()
 
     }
     
-    for(int i=0; i<coins.size(); i++)
+    for(int i=coins.size()-1; i>=0; i--)
     {
         if(detect_collision_square(coins[i].bound,ball1.bound))
         {
@@ -422,20 +480,22 @@ void detect_all_collisions()
         }
     }
 
-    for(int i=0; i<rings.size(); i++)
+    for(int i=rings.size()-1; i>=0; i--)
     {
         if(detect_collision_ring(rings[i],ball1.bound)==1)
         {
             ball1.position.x = rings[i].position.x - (rings[i].r1+rings[i].r2)/2;
             ball1.in_ring = 1;
             cur_ring = rings[i];
-            printf("set at right\n");
+            return;
+//            printf("set at right\n");
         }
         if(detect_collision_ring(rings[i],ball1.bound)==-1)
         {
             ball1.position.x = rings[i].position.x + (rings[i].r1+rings[i].r2)/2;
             ball1.in_ring = 1;
             cur_ring = rings[i];
+            return;
         }
 
     }
@@ -490,7 +550,7 @@ void move_left_in_ring()
     
     if(ball1.position.x<=cur_ring.position.x-r)
     {
-        printf("setting free after left\n");
+//        printf("setting free after left\n");
         ball1.in_ring=0;
         ball1.speed_y=0;
         ball1.position.y-=0.5;
@@ -560,6 +620,7 @@ void tick_input(GLFWwindow *window)
         create_zapper();
         create_coin();
         create_beam();
+        create_ring();
     }
 
     if(b)

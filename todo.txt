@@ -1,6 +1,6 @@
 - circles around zappers
-- collision with ring
-	- entering from right side and exiting from left makes it disappear, no idea why
+
+- make rings appear randomly
 
 - draw magnet
 	appears every few seconds at a position and then disappears
@@ -14,7 +14,6 @@
 - red squares with white outline (gives life) - projectile, special flying object
 - coins that fly - projectile - give 10 points
 
-- water balloons thrown by character
 
 
 
@@ -31,3 +30,4 @@ Done :
 - fire blows out of square when space pressed
 - score display
 - life display
+- water balloons thrown by character
