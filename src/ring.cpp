@@ -1,6 +1,9 @@
 #include "ring.h"
 #include "main.h"
 
+GLfloat temp1[100000];
+GLfloat temp2[100000];
+ 
 Ring::Ring(float x, float y,color_t color1,color_t color2)
 {
     this->position = glm::vec3(x, y, 0);
@@ -17,9 +20,9 @@ Ring::Ring(float x, float y,color_t color1,color_t color2)
     int n=360;
     float pi = M_PI;
     GLfloat g_vertex_buffer_data1[(9*n)/2];
-    GLfloat temp1[(3*n)/2];
+    //GLfloat temp1[100000];
     GLfloat g_vertex_buffer_data2[(9*n)/2];
-    GLfloat temp2[(3*n)/2];
+    //GLfloat temp2[100000];
     int i;
     for(i=0; i<n/2; i++)
     {
@@ -45,12 +48,12 @@ Ring::Ring(float x, float y,color_t color1,color_t color2)
         //first vertex
         g_vertex_buffer_data1[9*i+3] = temp1[3*i];
         g_vertex_buffer_data1[9*i+4] = temp1[3*i+1];
-        g_vertex_buffer_data1[9*i+5] = temp1[3*i+2];
+        g_vertex_buffer_data1[9*i+5] = temp1[3*i+2]; //0.0f; 
 
         //second vertex
         g_vertex_buffer_data1[9*i+6] = temp1[(3*i+3)%(3*n)];
         g_vertex_buffer_data1[9*i+7] = temp1[(3*i+4)%(3*n)];
-        g_vertex_buffer_data1[9*i+8] = temp1[(3*i+5)%(3*n)];
+        g_vertex_buffer_data1[9*i+8] = temp1[(3*i+5)%(3*n)]; //0.0f; 
         
         //center
         g_vertex_buffer_data2[9*i] = 0.0f;
@@ -60,12 +63,12 @@ Ring::Ring(float x, float y,color_t color1,color_t color2)
         //first vertex
         g_vertex_buffer_data2[9*i+3] = temp2[3*i];
         g_vertex_buffer_data2[9*i+4] = temp2[3*i+1];
-        g_vertex_buffer_data2[9*i+5] = temp2[3*i+2];
+        g_vertex_buffer_data2[9*i+5] = temp2[3*i+2]; //0.0f;
 
         //second vertex
         g_vertex_buffer_data2[9*i+6] = temp2[(3*i+3)%(3*n)];
         g_vertex_buffer_data2[9*i+7] = temp2[(3*i+4)%(3*n)];
-        g_vertex_buffer_data2[9*i+8] = temp2[(3*i+5)%(3*n)];
+        g_vertex_buffer_data2[9*i+8] = temp2[(3*i+5)%(3*n)];  //0.0f; 
         
     }
     
@@ -96,5 +99,5 @@ void Ring::set_position(float x, float y)
 
 void Ring::tick()
 {
-        
+  return;
 }

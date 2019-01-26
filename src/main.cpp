@@ -9,6 +9,7 @@
 #include "segment.h"
 #include "circle.h"
 #include "balloon.h"
+#include "magnet.h"
 
 using namespace std;
 
@@ -36,7 +37,7 @@ float camera_rotation_angle = 0;
 int count_zappers=0;    //number of zappers currently in range
 int count_coins=0;  //number of coins currently in range
 int count_beams=1;  //number of beams currently in range
-int count_rings=0;
+int count_rings=0;  //number of rings currently in range
 int zappers_hit=0;  //number of zappers hit till now
 int beams_hit = 0;  //number of beams hit till now
 int score=0;    //score
@@ -45,7 +46,7 @@ int life=0; //number of lives left
 int hang=0; //how many ticks left to hang
 int life_hang=60;   //how many ticks to hang for when collided by enemy
 int space_pressed=0; //if space pressed=1, else 0
-float step_length = 0.02;
+float step_length = 0.03;
 int zappers_scored = 0;
 int beams_scored = 0;
 int balloon_wait=0;
@@ -56,6 +57,7 @@ Circle life_circles[10];
 
 int num_digits = 5;
 
+Magnet cur_magnet;
 Ring cur_ring;
 
 Timer t60(1.0 / 60);
@@ -166,7 +168,11 @@ void draw()
     {
         balloons[i].draw(VP);
     }
-    
+    // for(int i=0; i<magnets.size(); i++)
+    // {
+    //     magnets[i].draw(VP);
+    // }
+    cur_magnet.draw(VP);
     draw_score(VP);
     draw_life_circles(VP);
 }
@@ -196,7 +202,6 @@ void create_zapper()
         if(detect_collision_square(b,rings[i].bound))
         {
         //    printf("collision detected : creating zapper\n");
-        
             return;
         }
     }
@@ -224,6 +229,12 @@ void create_ring()
             return;
         }
     }
+    for(int i=0; i<rings.size(); i++)
+    {
+        if(detect_collision_square(rings[i].bound,ring1.bound))
+            return;
+    }
+    
 
     rings.push_back(ring1);
     
@@ -232,8 +243,7 @@ void create_ring()
 
 
 void create_beam()
-{
-    
+{    
     if(count_beams>=1)
         return;
     
@@ -245,6 +255,24 @@ void create_beam()
     Beam b = Beam(5+camera_location_x,rnum%5-2,1,COLOR_WHITE,0.07);
     beams.push_back(b);
     count_beams++;
+}
+
+
+void create_magnet()
+{
+    if(cur_magnet.is_exist==1)
+        return;
+    int r=rand();
+    r%=1000;
+    if(r>3)
+        return;
+    int rnum = rand();
+    int top = rand() % 2;
+    if(top == 0)
+        top = -1;
+    Magnet m = Magnet(5+camera_location_x,top,COLOR_DARK_RED,COLOR_GREY);
+    m.ticks_left = (rand())%120 + 100;
+    cur_magnet = m;
 }
 
 
@@ -362,15 +390,13 @@ void count_elements()
             beams_scored++;
         }
     }
-
+    // Marker for future check
     count_rings=0;
-    for(int i=rings.size()-1; i>=0; i--)
+    for(int i=0; i<rings.size(); i++)
     {
         Ring r=rings[i];
         if(r.position.x>camera_location_x-8)
             count_rings++;
-        else
-            break;
     }
     //printf("%d\n",coins_scored);
 }
@@ -480,7 +506,7 @@ void detect_all_collisions()
         }
     }
 
-    for(int i=rings.size()-1; i>=0; i--)
+    for(int i=0; i<rings.size(); i++)
     {
         if(detect_collision_ring(rings[i],ball1.bound)==1)
         {
@@ -523,6 +549,7 @@ void move_right_in_ring()
     {
         //printf("setting free after right\n");
         ball1.position.y-=0.6;
+        ball1.position.x = camera_location_x;
         ball1.in_ring=0;
         ball1.speed_y=0;
         //printf("collision : %d\n",detect_collision_ring(cur_ring,ball1.bound));
@@ -551,10 +578,58 @@ void move_left_in_ring()
     if(ball1.position.x<=cur_ring.position.x-r)
     {
 //        printf("setting free after left\n");
+        ball1.position.x = camera_location_x;
         ball1.in_ring=0;
         ball1.speed_y=0;
         ball1.position.y-=0.5;
     }  
+}
+
+void right_click()
+{
+    camera_location_x+=step_length;
+    camera_target_x+=step_length;
+    detect_all_collisions();
+    if(ball1.in_ring)
+        move_right_in_ring();
+
+    for(int i=0; i<5; i++)
+    {
+        for(int j=1; j<=7; j++)
+        {
+           digit[i][j].position.x+=step_length;
+        }
+    }
+    for(int i=0; i<10; i++)
+    {
+        life_circles[i].position.x += step_length;
+    }
+    create_zapper();
+    create_coin();
+    create_beam();
+    create_ring();
+    create_magnet();
+
+}
+
+void left_click()
+{
+    camera_location_x-=step_length;
+    camera_target_x-=step_length;
+    detect_all_collisions();
+    if(ball1.in_ring)
+        move_left_in_ring();
+    for(int i=0; i<5; i++)
+    {
+        for(int j=1; j<=7; j++)
+        {
+            digit[i][j].position.x-=step_length;
+        }
+    }
+    for(int i=0; i<10; i++)
+    {
+        life_circles[i].position.x -= step_length;
+    }
 }
 
 void tick_input(GLFWwindow *window)
@@ -574,53 +649,13 @@ void tick_input(GLFWwindow *window)
     if (left)
     {
         ball1.left_click();
-        camera_location_x-=step_length;
-        camera_target_x-=step_length;
-        detect_all_collisions();
-
-        if(ball1.in_ring)
-            move_left_in_ring();
-
-        for(int i=0; i<5; i++)
-        {
-            for(int j=1; j<=7; j++)
-            {
-                digit[i][j].position.x-=step_length;
-            }
-        }
-        for(int i=0; i<10; i++)
-        {
-            life_circles[i].position.x -= step_length;
-        }
-
+        left_click();    
         
     }
     if(right)
     {
         ball1.right_click();
-        camera_location_x+=step_length;
-        camera_target_x+=step_length;
-        detect_all_collisions();
-        if(ball1.in_ring)
-            move_right_in_ring();
-
-        for(int i=0; i<5; i++)
-        {
-            for(int j=1; j<=7; j++)
-            {
-                digit[i][j].position.x+=step_length;
-            }
-        }
-        for(int i=0; i<10; i++)
-        {
-            life_circles[i].position.x += step_length;
-        }
-
-
-        create_zapper();
-        create_coin();
-        create_beam();
-        create_ring();
+        right_click();
     }
 
     if(b)
@@ -646,6 +681,43 @@ void tick_input(GLFWwindow *window)
         ball1.jump();
         detect_all_collisions();
     }
+}
+
+
+void check_for_magnets()
+{
+    if(cur_magnet.is_exist==0)
+        return;
+        
+    Magnet m = cur_magnet;
+    if(m.position.x<ball1.position.x)
+    {
+        ball1.position.x-=m.speed_x;
+        ball1.update_bounding_box();
+        float temp = step_length;
+        step_length = m.speed_x;
+        left_click();
+        step_length = temp;
+    }
+    if(m.position.x>ball1.position.x)
+    {
+        ball1.position.x+=m.speed_x;
+        ball1.update_bounding_box();
+        float temp = step_length;
+        step_length = m.speed_x;
+        right_click();
+        step_length = temp;
+    }
+    if(m.is_top==1 && ball1.position.y>=-3)
+    {
+        ball1.speed_y+=m.acc_y;
+    }
+    if(m.is_top==-1 && ball1.position.y<=-3)
+    {
+        ball1.speed_y-=m.acc_y;
+    }
+    
+  
 }
 
 
@@ -685,6 +757,37 @@ void tick_elements(GLFWwindow *window)
         balloons.clear();
     }
     
+/*    for(int i=0; i<magnets.size(); i++)
+    {
+        magnets[i].tick();
+        Magnet m = magnets[i];
+        if(m.is_exist == 1 && m.ticks_left==0)
+        {
+            ball1.speed_x = 0;
+            ball1.speed_y = 0;
+            magnets[i].is_exist=0;
+            printf("stop existing\n");
+            break;
+        }
+        if(m.is_exist==1)
+        {
+            cur_magnet = &magnets[i];
+        }
+
+    }*/
+    if(cur_magnet.is_exist==1)
+    {
+        cur_magnet.tick();
+        if(cur_magnet.ticks_left==0)
+        {
+            printf("stop existing\n");
+            ball1.speed_x = 0;
+            ball1.speed_y = 0;
+            cur_magnet.is_exist=0;
+        }
+    }
+    check_for_magnets();
+
     detect_all_collisions();
     count_elements();
     score=coins_scored*5+zappers_scored+beams_scored;
@@ -758,6 +861,10 @@ void initGL(GLFWwindow *window, int width, int height) {
 
     Ring ring1 = Ring(10,0,COLOR_GREEN,COLOR_BACKGROUND);
     rings.push_back(ring1);
+    
+    cur_magnet = Magnet(3,-1,COLOR_DARK_RED,COLOR_GREY);
+    cur_magnet.ticks_left = 300;
+
     platform1 = Platform(500,-1003.05,COLOR_BLACK);
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");

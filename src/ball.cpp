@@ -7,10 +7,10 @@ Ball::Ball(float x, float y, color_t color,color_t color_fire)
     this->rotation = 0;
     this->speed_y = 0;
     this->speed_x=0.00;
-    this->acc_x=0.002;
+    this->acc_x=0;
     this->acc_y=0.003;
     this->cur_jump_state=0;
-    this->step_length=0.02;
+    this->step_length=0.03;
     int n=3;
     this->r=0.3f;
     float pi=3.14f;
