@@ -10,6 +10,7 @@
 #include "circle.h"
 #include "balloon.h"
 #include "magnet.h"
+#include "lifeline.h"
 
 using namespace std;
 
@@ -50,6 +51,7 @@ float step_length = 0.03;
 int zappers_scored = 0;
 int beams_scored = 0;
 int balloon_wait=0;
+int lifelines_scored = 0;
 
 Segment digit[5][8]; 
 
@@ -59,6 +61,7 @@ int num_digits = 5;
 
 Magnet cur_magnet;
 Ring cur_ring;
+Lifeline cur_lifeline;
 
 Timer t60(1.0 / 60);
 
@@ -173,9 +176,30 @@ void draw()
     //     magnets[i].draw(VP);
     // }
     cur_magnet.draw(VP);
+    cur_lifeline.draw(VP);
     draw_score(VP);
     draw_life_circles(VP);
 }
+
+
+void create_lifeline()
+{
+    if(cur_lifeline.is_exist==1)
+        return;
+    if(life==5)
+        return;
+    int r=rand();
+    r%=1000;
+    if(r>5)
+        return;
+    int rnum = rand();
+    Lifeline l = Lifeline(camera_location_x+3, -2, COLOR_DARK_RED);
+    cur_lifeline = l;
+}
+
+
+
+
 
 //if number of zappers on the screen is less than one, creates one
 void create_zapper()
@@ -208,6 +232,11 @@ void create_zapper()
     zappers.push_back(z);
     count_zappers++;
 }
+
+
+
+
+
 
 void create_ring()
 {
@@ -525,6 +554,15 @@ void detect_all_collisions()
         }
 
     }
+    if(cur_lifeline.is_exist==1)
+    {
+        if(detect_collision_square(ball1.bound,cur_lifeline.bound))
+        {
+            lifelines_scored++;
+            cur_lifeline.is_exist=0;
+            cur_lifeline.update_bounding_box();
+        }
+    }
 }
 
 void move_right_in_ring()
@@ -609,6 +647,7 @@ void right_click()
     create_beam();
     create_ring();
     create_magnet();
+    create_lifeline();
 
 }
 
@@ -757,24 +796,6 @@ void tick_elements(GLFWwindow *window)
         balloons.clear();
     }
     
-/*    for(int i=0; i<magnets.size(); i++)
-    {
-        magnets[i].tick();
-        Magnet m = magnets[i];
-        if(m.is_exist == 1 && m.ticks_left==0)
-        {
-            ball1.speed_x = 0;
-            ball1.speed_y = 0;
-            magnets[i].is_exist=0;
-            printf("stop existing\n");
-            break;
-        }
-        if(m.is_exist==1)
-        {
-            cur_magnet = &magnets[i];
-        }
-
-    }*/
     if(cur_magnet.is_exist==1)
     {
         cur_magnet.tick();
@@ -788,10 +809,13 @@ void tick_elements(GLFWwindow *window)
     }
     check_for_magnets();
 
+    cur_lifeline.tick();
     detect_all_collisions();
     count_elements();
     score=coins_scored*5+zappers_scored+beams_scored;
-    life=5-zappers_hit-beams_hit;
+    life=5-zappers_hit-beams_hit+lifelines_scored;
+    if(life>5)
+        life=5;
     sprintf(title,"SCORE : %d\t LIFE : %d",score,life);
     glfwSetWindowTitle(window,title);
     //camera_rotation_angle += 1;
@@ -865,6 +889,8 @@ void initGL(GLFWwindow *window, int width, int height) {
     cur_magnet = Magnet(3,-1,COLOR_DARK_RED,COLOR_GREY);
     cur_magnet.ticks_left = 300;
 
+    cur_lifeline = Lifeline(-3,-3,COLOR_DARK_RED);
+    cur_lifeline.is_exist=0;
     platform1 = Platform(500,-1003.05,COLOR_BLACK);
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");

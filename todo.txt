@@ -1,11 +1,5 @@
 - circles around zappers
 
-- make rings appear randomly
-
-- draw magnet
-	appears every few seconds at a position and then disappears
-	only appears at the top or bottom
-- force by magnet : constant
 - add conditions to prevent overlapping
 - left click should change the position of player, not camera
 
@@ -15,6 +9,8 @@
 - coins that fly - projectile - give 10 points
 
 
+- create boomerangs
+- boomerang moves in an ellipse
 
 
 Done :
@@ -31,3 +27,9 @@ Done :
 - score display
 - life display
 - water balloons thrown by character
+- make rings appear randomly
+
+- draw magnet
+	appears every few seconds at a position and then disappears
+	only appears at the top or bottom
+- force by magnet : constant
