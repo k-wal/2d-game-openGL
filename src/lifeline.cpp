@@ -13,7 +13,7 @@ Lifeline::Lifeline(float x, float y, color_t color)
     this->r2 = 0.095;
     this->is_exist = 1;
 
-    this->speed_x = -0.02;
+    this->speed_x = -0.025;
     this->speed_y = 0.08;
     this->acc_y = -0.001;
 

@@ -52,6 +52,7 @@ int zappers_scored = 0;
 int beams_scored = 0;
 int balloon_wait=0;
 int lifelines_scored = 0;
+int score_squares_scored=0;
 
 Segment digit[5][8]; 
 
@@ -62,6 +63,7 @@ int num_digits = 5;
 Magnet cur_magnet;
 Ring cur_ring;
 Lifeline cur_lifeline;
+Lifeline cur_score_square;
 
 Timer t60(1.0 / 60);
 
@@ -177,6 +179,7 @@ void draw()
     // }
     cur_magnet.draw(VP);
     cur_lifeline.draw(VP);
+    cur_score_square.draw(VP);
     draw_score(VP);
     draw_life_circles(VP);
 }
@@ -184,7 +187,7 @@ void draw()
 
 void create_lifeline()
 {
-    if(cur_lifeline.is_exist==1)
+    if(cur_lifeline.is_exist==1 || cur_score_square.is_exist==1)
         return;
     if(life==5)
         return;
@@ -193,12 +196,24 @@ void create_lifeline()
     if(r>5)
         return;
     int rnum = rand();
-    Lifeline l = Lifeline(camera_location_x+3, -2, COLOR_DARK_RED);
+    Lifeline l = Lifeline(camera_location_x+4, -2, COLOR_DARK_RED);
     cur_lifeline = l;
 }
 
 
+void create_score_square()
+{
+    if(cur_score_square.is_exist==1 || cur_lifeline.is_exist==1)
+        return;
+    int r = rand();
+    r%=1000;
+    if(r>3)
+        return;
+    int rnum = rand();
+    Lifeline l = Lifeline(camera_location_x+4, -2, COLOR_DARK_BLUE);
+    cur_score_square = l;
 
+}
 
 
 //if number of zappers on the screen is less than one, creates one
@@ -563,6 +578,15 @@ void detect_all_collisions()
             cur_lifeline.update_bounding_box();
         }
     }
+    if(cur_score_square.is_exist==1)
+    {
+        if(detect_collision_square(ball1.bound,cur_score_square.bound))
+        {
+            score_squares_scored++;
+            cur_score_square.is_exist=0;
+            cur_score_square.update_bounding_box();
+        }
+    }
 }
 
 void move_right_in_ring()
@@ -648,7 +672,7 @@ void right_click()
     create_ring();
     create_magnet();
     create_lifeline();
-
+    create_score_square();
 }
 
 void left_click()
@@ -682,6 +706,8 @@ void tick_input(GLFWwindow *window)
     int space = glfwGetKey(window, GLFW_KEY_SPACE);
     int b = glfwGetKey(window, GLFW_KEY_B);
     int s = glfwGetKey(window, GLFW_KEY_S);
+    int a = glfwGetKey(window, GLFW_KEY_A);
+    int d = glfwGetKey(window, GLFW_KEY_D);
     //int up  = glfwGetKey(window, GLFW_KEY_UP);
     //int down = glfwGetKey(window, GLFW_KEY_DOWN);
     
@@ -697,6 +723,7 @@ void tick_input(GLFWwindow *window)
         right_click();
     }
 
+    // throw water balloons
     if(b)
     {
         if(balloon_wait==0)
@@ -706,13 +733,33 @@ void tick_input(GLFWwindow *window)
             balloon_wait=15;
         }
     }
+
+    //reset screen to original settings
     if(s)
     {
         screen_zoom=default_zoom;
         Matrices.projection = glm::perspective(glm::radians(screen_zoom),600.0f/600.0f,0.1f,100.0f);
+        camera_location_x = ball1.position.x;
+        camera_target_x = ball1.position.x;
+
 //        reset_screen();
     }
+
+    // pan right
+    if(d)
+    {
+        camera_location_x+=step_length;
+        camera_target_x+=step_length;
+    }
   
+    // pan left
+    if(a)
+    {
+        camera_target_x-=step_length;
+        camera_location_x-=step_length;
+    }
+
+
     //    glm::vec3 target (screen_center_x, 0, 0);
     if(space)
     {
@@ -810,9 +857,10 @@ void tick_elements(GLFWwindow *window)
     check_for_magnets();
 
     cur_lifeline.tick();
+    cur_score_square.tick();
     detect_all_collisions();
     count_elements();
-    score=coins_scored*5+zappers_scored+beams_scored;
+    score=coins_scored*5+zappers_scored+beams_scored+20*score_squares_scored;
     life=5-zappers_hit-beams_hit+lifelines_scored;
     if(life>5)
         life=5;
@@ -891,6 +939,8 @@ void initGL(GLFWwindow *window, int width, int height) {
 
     cur_lifeline = Lifeline(-3,-3,COLOR_DARK_RED);
     cur_lifeline.is_exist=0;
+    cur_score_square = Lifeline(-3,-3,COLOR_DARK_RED);
+    cur_score_square.is_exist=0;
     platform1 = Platform(500,-1003.05,COLOR_BLACK);
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");

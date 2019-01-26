@@ -2,10 +2,6 @@
 - add conditions to prevent overlapping
 - left click should change the position of player, not camera
 
-- make beams more beam like [square in corners and lines between them]
-
-- coins that fly - projectile - give 10 points
-
 
 - create boomerangs
 - boomerang moves in an ellipse
@@ -34,3 +30,6 @@ Done :
 - red squares with white outline (gives life) - projectile, special flying object
 	- randomly gets generated when life<5
 - circles around zappers
+- make beams more beam like [square in corners and lines between them]
+
+- coins that fly - projectile - give 20 points
