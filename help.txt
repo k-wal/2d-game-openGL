@@ -1,0 +1,9 @@
+How to Run
+
+- create folder 'output' if not already there
+
+- command : 'cmake ..'
+
+- command : 'make'
+
+- command : './graphics_asgn1'

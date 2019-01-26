@@ -11,6 +11,7 @@
 #include "balloon.h"
 #include "magnet.h"
 #include "lifeline.h"
+#include "boomerang.h"
 
 using namespace std;
 
@@ -41,6 +42,7 @@ int count_beams=1;  //number of beams currently in range
 int count_rings=0;  //number of rings currently in range
 int zappers_hit=0;  //number of zappers hit till now
 int beams_hit = 0;  //number of beams hit till now
+int boomerang_hit = 0;
 int score=0;    //score
 int coins_scored=0; //number of coins scored till now
 int life=0; //number of lives left
@@ -54,6 +56,7 @@ int balloon_wait=0;
 int lifelines_scored = 0;
 int score_squares_scored=0;
 
+
 Segment digit[5][8]; 
 
 Circle life_circles[10];
@@ -64,6 +67,7 @@ Magnet cur_magnet;
 Ring cur_ring;
 Lifeline cur_lifeline;
 Lifeline cur_score_square;
+Boomerang cur_boomerang;
 
 Timer t60(1.0 / 60);
 
@@ -180,6 +184,7 @@ void draw()
     cur_magnet.draw(VP);
     cur_lifeline.draw(VP);
     cur_score_square.draw(VP);
+    cur_boomerang.draw(VP);
     draw_score(VP);
     draw_life_circles(VP);
 }
@@ -248,11 +253,6 @@ void create_zapper()
     count_zappers++;
 }
 
-
-
-
-
-
 void create_ring()
 {
     if(count_rings>=1)
@@ -269,7 +269,6 @@ void create_ring()
     {
         if(detect_collision_line(zappers[i].bound,ring1.bound))
         {
-            printf("collision detected : creating ring\n");
             return;
         }
     }
@@ -284,6 +283,22 @@ void create_ring()
     
     
 }
+
+
+void create_boomerang()
+{
+    if(cur_boomerang.is_exist == 1)
+        return;
+    int r=rand();
+    r%=1000;
+    if(r>10)
+        return;
+
+    Boomerang b = Boomerang(5+camera_location_x, r%3-1,COLOR_WHITE);
+    cur_boomerang = b;    
+}
+
+
 
 
 void create_beam()
@@ -587,6 +602,17 @@ void detect_all_collisions()
             cur_score_square.update_bounding_box();
         }
     }
+    if(cur_boomerang.is_exist==1)
+    {
+        if(detect_collision_line(cur_boomerang.bound,ball1.bound))
+        {
+            hang = life_hang;
+            boomerang_hit++;
+            cur_boomerang.is_exist=0;
+            cur_boomerang.update_bounding_box();
+        }
+    }
+
 }
 
 void move_right_in_ring()
@@ -670,6 +696,7 @@ void right_click()
     create_coin();
     create_beam();
     create_ring();
+    create_boomerang();
     create_magnet();
     create_lifeline();
     create_score_square();
@@ -848,7 +875,6 @@ void tick_elements(GLFWwindow *window)
         cur_magnet.tick();
         if(cur_magnet.ticks_left==0)
         {
-            printf("stop existing\n");
             ball1.speed_x = 0;
             ball1.speed_y = 0;
             cur_magnet.is_exist=0;
@@ -858,12 +884,19 @@ void tick_elements(GLFWwindow *window)
 
     cur_lifeline.tick();
     cur_score_square.tick();
+    cur_boomerang.tick();
+    if(cur_boomerang.position.x< camera_location_x-8)
+    {
+        cur_boomerang.is_exist=0;
+    }
     detect_all_collisions();
     count_elements();
     score=coins_scored*5+zappers_scored+beams_scored+20*score_squares_scored;
-    life=5-zappers_hit-beams_hit+lifelines_scored;
+    life=5-zappers_hit-beams_hit+lifelines_scored-boomerang_hit;
     if(life>5)
         life=5;
+    if(life<0)
+        quit(window);
     sprintf(title,"SCORE : %d\t LIFE : %d",score,life);
     glfwSetWindowTitle(window,title);
     //camera_rotation_angle += 1;
@@ -919,10 +952,6 @@ void initGL(GLFWwindow *window, int width, int height) {
     zappers.push_back(z);
     z = Zapper(4,1,60,1.2,COLOR_YELLOW);
     zappers.push_back(z);
-/*    Coin c = Coin(1.5,0,COLOR_GOLDEN);
-    coins.push_back(c);
-    c = Coin(3.5,-2,COLOR_GOLDEN);
-    coins.push_back(c);*/
     count_elements();
     Beam beam1 = Beam(7,2,1,COLOR_WHITE,0.07);
     beams.push_back(beam1);
@@ -937,11 +966,17 @@ void initGL(GLFWwindow *window, int width, int height) {
     cur_magnet = Magnet(3,-1,COLOR_DARK_RED,COLOR_GREY);
     cur_magnet.ticks_left = 300;
 
+    cur_boomerang = Boomerang(-3,-3,COLOR_WHITE);
+    cur_boomerang.is_exist = 0;
+
     cur_lifeline = Lifeline(-3,-3,COLOR_DARK_RED);
     cur_lifeline.is_exist=0;
+
     cur_score_square = Lifeline(-3,-3,COLOR_DARK_RED);
     cur_score_square.is_exist=0;
+
     platform1 = Platform(500,-1003.05,COLOR_BLACK);
+
     // Create and compile our GLSL program from the shaders
     programID = LoadShaders("Sample_GL.vert", "Sample_GL.frag");
     // Get a handle for our "MVP" uniform
