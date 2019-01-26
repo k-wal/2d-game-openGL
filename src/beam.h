@@ -17,10 +17,18 @@ public:
     float thickness;
     int direction;
     float speed;
+    float end_height;
+    float end_width;
+
     void update_bounding_box();
     bounding_box_t bound;
 private:
-    VAO *object;
+    VAO *object1;
+    VAO *object2;
+    VAO *end1;
+    VAO *end2;
+
 };
+
 
 #endif // BEAM_H

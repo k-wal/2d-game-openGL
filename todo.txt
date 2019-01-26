@@ -1,11 +1,9 @@
-- circles around zappers
 
 - add conditions to prevent overlapping
 - left click should change the position of player, not camera
 
 - make beams more beam like [square in corners and lines between them]
 
-- red squares with white outline (gives life) - projectile, special flying object
 - coins that fly - projectile - give 10 points
 
 
@@ -33,3 +31,6 @@ Done :
 	appears every few seconds at a position and then disappears
 	only appears at the top or bottom
 - force by magnet : constant
+- red squares with white outline (gives life) - projectile, special flying object
+	- randomly gets generated when life<5
+- circles around zappers

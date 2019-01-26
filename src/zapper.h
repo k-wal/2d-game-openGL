@@ -10,6 +10,9 @@ public:
     Zapper(float x, float y, float rotation,float width,color_t color);
     glm::vec3 position;
     float rotation;
+    float r;
+    float end_height;
+    float end_width;
     void draw(glm::mat4 VP);
     void set_position(float x, float y);
     void tick();
@@ -18,6 +21,8 @@ public:
     bounding_box_t bound;
 private:
     VAO *object;
+    VAO *end1;
+    VAO *end2;
 };
 
 #endif // ZAPPER_H

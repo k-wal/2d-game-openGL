@@ -6,14 +6,16 @@ Beam::Beam(float x, float y,float width, color_t color,float thickness)
     this->position = glm::vec3(x, y, 0);
     this->rotation = 0;
     this->width = width;
-    this->thickness = thickness;
+    this->thickness = 0.01;
     this->bound.x = position.x;
     this->bound.y = position.y;
+    this->end_height = 0.09;
+    this->end_width = 0.2;
     this->bound.width = this->width;
-    this->bound.height = this->thickness;
+    this->bound.height = this->end_height;
     this->bound.rotation = this->rotation;
     this->speed = 0.01;
-
+    
     // 1 : going up
     this->direction = 1;
 
@@ -29,16 +31,48 @@ Beam::Beam(float x, float y,float width, color_t color,float thickness)
         this->width, -this->thickness, 0.0f,
         };
     */
-    static const GLfloat vertex_buffer_data[] = {
-        -this->width, this->thickness, 0.0f,
-        this->width, this->thickness, 0.0f,
-        this->width, -this->thickness, 0.0f,
-        -this->width, this->thickness, 0.0f,
-        -this->width, -this->thickness, 0.0f,
-        this->width, -this->thickness, 0.0f,
+    static const GLfloat vertex_buffer_data1[] = {
+        -this->width, this->end_height, 0.0f,
+        this->width, this->end_height, 0.0f,
+        this->width, this->end_height-2*this->thickness, 0.0f,
+        -this->width, this->end_height, 0.0f,
+        -this->width, this->end_height-2*this->thickness, 0.0f,
+        this->width, this->end_height-2*this->thickness, 0.0f,
         };
     
-    this->object = create3DObject(GL_TRIANGLES, 2*3, vertex_buffer_data, color , GL_FILL);
+    static const GLfloat vertex_buffer_data2[] = {
+        -this->width, -this->end_height+2*this->thickness, 0.0f,
+        this->width, -this->end_height+2*this->thickness, 0.0f,
+        this->width, -this->end_height, 0.0f,
+        -this->width, -this->end_height+2*this->thickness, 0.0f,
+        -this->width, -this->end_height, 0.0f,
+        this->width, -this->end_height, 0.0f,
+        };
+    
+
+    static const GLfloat vertex_buffer_data_end1[] = {
+        -this->width-this->end_width, this->end_height, 0.0f,
+        -this->width, this->end_height, 0.0f,
+        -this->width, -this->end_height, 0.0f,
+        -this->width-this->end_width, this->end_height, 0.0f,
+        -this->width-this->end_width, -this->end_height, 0.0f,
+        -this->width, -this->end_height, 0.0f,
+        };
+    
+    static const GLfloat vertex_buffer_data_end2[] = {
+        this->width, this->end_height, 0.0f,
+        this->width+this->end_width, this->end_height, 0.0f,
+        this->width+this->end_width, -this->end_height, 0.0f,
+        this->width, this->end_height, 0.0f,
+        this->width, -this->end_height, 0.0f,
+        this->width+this->end_width, -this->end_height, 0.0f,
+        };
+    
+    this->object1 = create3DObject(GL_TRIANGLES, 2*3, vertex_buffer_data1, COLOR_ORANGE , GL_FILL);
+    this->object2 = create3DObject(GL_TRIANGLES, 2*3, vertex_buffer_data2, COLOR_ORANGE , GL_FILL);
+    this->end1 = create3DObject(GL_TRIANGLES, 2*3, vertex_buffer_data_end1, COLOR_INDIGO , GL_FILL);
+    this->end2 = create3DObject(GL_TRIANGLES, 2*3, vertex_buffer_data_end2, COLOR_INDIGO , GL_FILL);
+
 }
 
 void Beam::draw(glm::mat4 VP)
@@ -51,7 +85,10 @@ void Beam::draw(glm::mat4 VP)
     Matrices.model *= (translate * rotate);
     glm::mat4 MVP = VP * Matrices.model;
     glUniformMatrix4fv(Matrices.MatrixID, 1, GL_FALSE, &MVP[0][0]);
-    draw3DObject(this->object);
+    draw3DObject(this->object1);
+    draw3DObject(this->object2);
+    draw3DObject(this->end1);
+    draw3DObject(this->end2);
 }
 
 void Beam::set_position(float x, float y)
