@@ -5,7 +5,7 @@ Assignment 1
 
 
 
-##Controls
+## Controls
 
 - `SPACE` :jump
 
